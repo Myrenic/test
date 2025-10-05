@@ -7,6 +7,3 @@ spec:
   interval: 10m
   path: clusters/my-cluster/apps/media/lidarr/app
   prune: true
-  sourceRef:
-    kind: GitRepository
-    name: cluster
