@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarr-flux
+  labels:
+    app: sonarr-flux
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarr-flux
+  template:
+    metadata:
+      labels:
+        app: sonarr-flux
+    spec:
+      containers:
+        - name: sonarr-flux
+          image: lscr.io/linuxserver/sonarr:latest
+          ports:
+            - containerPort: 8989
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "Europe/Amsterdam"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          emptyDir: {}

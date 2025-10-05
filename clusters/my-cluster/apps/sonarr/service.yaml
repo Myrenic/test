@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarr-flux
+spec:
+  selector:
+    app: sonarr-flux
+  ports:
+    - port: 8990
+      targetPort: 8990
+      protocol: TCP
+  type: ClusterIP
