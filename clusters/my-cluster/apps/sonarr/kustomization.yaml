@@ -1,4 +1,3 @@
 resources:
   - ns.yaml
-  - deployment.yaml
-  - service.yaml
+
