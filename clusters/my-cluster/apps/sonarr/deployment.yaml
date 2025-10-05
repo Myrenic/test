@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sonarr
+  name: sonarr-flux
   labels:
-    app: sonarr
+    app: sonarr-flux
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sonarr
+      app: sonarr-flux
   template:
     metadata:
       labels:
-        app: sonarr
+        app: sonarr-flux
     spec:
       containers:
-        - name: sonarr
+        - name: sonarr-flux
           image: lscr.io/linuxserver/sonarr:latest
           ports:
             - containerPort: 8989
