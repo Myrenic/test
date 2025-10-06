@@ -5,11 +5,12 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m
-  path: /apps
+  path: ../../../apps/media/sonarr/base
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
   postBuild:
     substitute:
-      ENV: staging
+      IMAGE_TAG: develop
+      DOMAIN: staging.example.com

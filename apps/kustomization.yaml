@@ -1,4 +1,5 @@
+# apps/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ./media/sonarr/overlays/${ENV}
+  - ./media/sonarr/overlays/$ENV

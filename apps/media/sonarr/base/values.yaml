@@ -1,0 +1,11 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/linuxserver/sonarr
+  tag: "${IMAGE_TAG:=latest}"
+ingress:
+  enabled: true
+  hosts:
+    - host: "sonarr.${DOMAIN:=example.com}"
+      paths:
+        - path: /
+          pathType: Prefix
