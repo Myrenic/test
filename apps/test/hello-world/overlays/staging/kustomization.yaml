@@ -3,4 +3,7 @@ kind: Kustomization
 resources:
 - ../../base
 patches:
-- path: values-patch.yaml
+- target:
+    kind: Service
+    name: hello-world-service
+  path: values-patch.yaml
