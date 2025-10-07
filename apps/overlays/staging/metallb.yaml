@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: apps/config/core/metallb/overlays/staging/kustomization.yaml
+  path: apps/config/core/metallb/overlays/staging/
   prune: true
   sourceRef:
     kind: GitRepository
