@@ -1,0 +1,10 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: Service
+metadata:
+  name: hello-world-service
+  namespace: hello-world
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8001
