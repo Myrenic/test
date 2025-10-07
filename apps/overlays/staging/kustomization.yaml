@@ -1,4 +1,12 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
+apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
-resources:
-  - ../../config/core/metallb/overlays/staging
+metadata:
+  name: metallb-staging
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: apps/config/core/metallb/overlays/staging/kustomization.yaml
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
