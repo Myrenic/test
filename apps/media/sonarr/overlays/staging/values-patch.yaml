@@ -3,13 +3,3 @@ kind: HelmRelease
 metadata:
   name: sonarr
   namespace: media
-spec:
-  values:
-    image:
-      tag: develop
-    ingress:
-      hosts:
-        - host: sonarr.staging.example.com
-          paths:
-            - path: /
-              pathType: Prefix
