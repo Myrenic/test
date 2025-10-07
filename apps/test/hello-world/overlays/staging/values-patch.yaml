@@ -5,6 +5,7 @@ metadata:
   namespace: hello-world
 spec:
   ports:
-    - protocol: TCP
+    - name: http 
+      protocol: TCP
       port: 85
       targetPort: 8000

@@ -8,6 +8,7 @@ spec:
   selector:
     app: hello-world
   ports:
-    - protocol: TCP
+    - name: http 
+      protocol: TCP
       port: 80
       targetPort: 8000
