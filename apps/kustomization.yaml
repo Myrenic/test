@@ -2,5 +2,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ./media/sonarr/overlays/$ENV
-  - ./test/hello-world/overlays/$ENV
+  - ./media/sonarr/overlays/staging
+  - ./test/hello-world/overlays/staging
