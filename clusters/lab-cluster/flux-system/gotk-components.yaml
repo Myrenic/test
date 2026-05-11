@@ -2608,6 +2608,10 @@ spec:
       securityContext:
         fsGroup: 1337
       serviceAccountName: source-controller
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       terminationGracePeriodSeconds: 10
       volumes:
       - emptyDir: {}
@@ -3430,6 +3434,10 @@ spec:
       securityContext:
         fsGroup: 1337
       serviceAccountName: kustomize-controller
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       terminationGracePeriodSeconds: 60
       volumes:
       - emptyDir: {}
@@ -4986,6 +4994,10 @@ spec:
       securityContext:
         fsGroup: 1337
       serviceAccountName: helm-controller
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       terminationGracePeriodSeconds: 600
       volumes:
       - emptyDir: {}
@@ -6431,6 +6443,10 @@ spec:
       securityContext:
         fsGroup: 1337
       serviceAccountName: notification-controller
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       terminationGracePeriodSeconds: 10
       volumes:
       - emptyDir: {}
