@@ -35,26 +35,29 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: dashboard
-          image: nginx:1.27-alpine
+          image: ghcr.io/myrenic/k8s-dashboard:latest
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
+          env:
+            - name: RUST_LOG
+              value: "info"
           resources:
             requests:
               cpu: 10m
-              memory: 16Mi
+              memory: 32Mi
             limits:
-              memory: 64Mi
+              memory: 128Mi
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
-            initialDelaySeconds: 3
+            initialDelaySeconds: 5
             periodSeconds: 5
       terminationGracePeriodSeconds: 15
