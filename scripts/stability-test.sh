@@ -92,7 +92,8 @@ for i in $(seq 1 "$LOOPS"); do
       UNHEALTHY_PODS=$(echo "$UNHEALTHY_PODS" | grep -v "homeassistant" | grep -v "^$" || true)
     fi
 
-    UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . 2>/dev/null || echo 0)
+    UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . || true)
+    UNHEALTHY=${UNHEALTHY:-0}
 
     if [ "${UNHEALTHY:-0}" -eq 0 ]; then
       ALL_HEALTHY=true
