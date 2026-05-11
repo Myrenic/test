@@ -47,8 +47,22 @@ for i in $(seq 1 "$LOOPS"); do
   kubectl drain "$TARGET" --ignore-daemonsets --delete-emptydir-data --timeout=${TIMEOUT}s 2>&1 || true
 
   # --- 3. Verify: Check pod rescheduling within timeout ---
-  log "Step 3: Waiting ${TIMEOUT}s for pod rescheduling..."
+  log "Step 3: Waiting for API + pod rescheduling (${TIMEOUT}s)..."
   START=$(date +%s)
+
+  # First wait for kube-apiserver to be reachable (drain disrupts it)
+  while true; do
+    ELAPSED=$(( $(date +%s) - START ))
+    if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+      break
+    fi
+    if kubectl get nodes &>/dev/null; then
+      log "API reachable after ${ELAPSED}s"
+      break
+    fi
+    sleep 3
+  done
+
   ALL_HEALTHY=false
   while true; do
     ELAPSED=$(( $(date +%s) - START ))
@@ -62,9 +76,15 @@ for i in $(seq 1 "$LOOPS"); do
     # Count unhealthy pods, excluding:
     # - DaemonSet pods (netbird, kube-proxy, kube-flannel)
     # - homeassistant if its storage node is the cordoned one
-    UNHEALTHY_PODS=$(kubectl get pods -A -o wide --no-headers 2>/dev/null | \
+    POD_OUTPUT=$(kubectl get pods -A -o wide --no-headers 2>/dev/null)
+    if [ -z "$POD_OUTPUT" ]; then
+      sleep 5
+      continue
+    fi
+
+    UNHEALTHY_PODS=$(echo "$POD_OUTPUT" | \
       grep -vE "Running|Completed|Succeeded" | \
-      grep -vE "netbird|kube-proxy|kube-flannel")
+      grep -vE "netbird|kube-proxy|kube-flannel" || true)
 
     # If homeassistant PVC node is cordoned, exclude it from check
     if [ "$TARGET" = "$HA_NODE" ]; then
@@ -93,16 +113,30 @@ for i in $(seq 1 "$LOOPS"); do
     log "Note: homeassistant skipped (PVC bound to cordoned node $TARGET — expected with local-path)"
   fi
 
-  # --- 4. Audit: Verify Netbird-only access ---
-  NP_EXISTS=$(kubectl get networkpolicy ingress-nginx-netbird-only -n ingress-nginx -o name 2>/dev/null || true)
-  if [ -n "$NP_EXISTS" ]; then
+  # --- 4. Audit: Verify Netbird-only access (retry up to 30s for API stability) ---
+  NP_FOUND=false
+  for _ in $(seq 1 6); do
+    NP_EXISTS=$(kubectl get networkpolicy ingress-nginx-netbird-only -n ingress-nginx -o name 2>/dev/null || true)
+    if [ -n "$NP_EXISTS" ]; then
+      NP_FOUND=true
+      break
+    fi
+    sleep 5
+  done
+  if $NP_FOUND; then
     pass "Loop $i: NetworkPolicy for Netbird-only access exists"
   else
     fail "Loop $i: NetworkPolicy missing — ingress NOT restricted to Netbird"
   fi
 
-  SVC_TYPE=$(kubectl get svc -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx \
-    -o jsonpath='{.items[0].spec.type}' 2>/dev/null || echo "N/A")
+  SVC_TYPE=""
+  for _ in $(seq 1 6); do
+    SVC_TYPE=$(kubectl get svc -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx \
+      -o jsonpath='{.items[0].spec.type}' 2>/dev/null || echo "")
+    if [ -n "$SVC_TYPE" ]; then break; fi
+    sleep 5
+  done
+  SVC_TYPE=${SVC_TYPE:-N/A}
   if [ "$SVC_TYPE" != "LoadBalancer" ] && [ "$SVC_TYPE" != "NodePort" ]; then
     pass "Loop $i: Ingress service type '$SVC_TYPE' — not externally exposed"
   else
