@@ -1,48 +1,42 @@
+# local-path-provisioner — lightweight storage for Talos Linux
+# NOTE: Longhorn requires iscsi-tools Talos extension. When Omni access
+#       is available, add the extension and switch back to Longhorn for
+#       replicated storage across nodes.
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: longhorn-system
-  labels:
-    pod-security.kubernetes.io/enforce: privileged
-    pod-security.kubernetes.io/audit: privileged
-    pod-security.kubernetes.io/warn: privileged
+  name: local-path-storage
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: longhorn
-  namespace: longhorn-system
+  name: local-path-provisioner
+  namespace: local-path-storage
 spec:
   interval: 24h
-  url: https://charts.longhorn.io
+  url: https://charts.containeroo.ch
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: longhorn
-  namespace: longhorn-system
+  name: local-path-provisioner
+  namespace: local-path-storage
 spec:
   interval: 30m
   chart:
     spec:
-      chart: longhorn
-      version: "1.8.*"
+      chart: local-path-provisioner
+      version: "0.0.*"
       sourceRef:
         kind: HelmRepository
-        name: longhorn
+        name: local-path-provisioner
       interval: 12h
   values:
-    persistence:
+    storageClass:
+      name: local-path
       defaultClass: true
-      defaultClassReplicaCount: 3
       reclaimPolicy: Retain
-      defaultDataLocality: best-effort
-    defaultSettings:
-      replicaAutoBalance: best-effort
-      storageMinimalAvailablePercentage: 15
-      nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
-      nodeDrainPolicy: always-allow
-      guaranteedInstanceManagerCPU: 5
-      fastReplicaRebuildEnabled: true
-    longhornUI:
-      replicas: 2
+    nodePathMap:
+      - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+        paths:
+          - /var/local-path-provisioner

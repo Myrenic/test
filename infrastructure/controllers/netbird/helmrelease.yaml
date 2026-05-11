@@ -30,8 +30,16 @@ spec:
       containers:
         - name: netbird
           image: netbirdio/netbird:latest
-          command: ["/usr/local/bin/netbird"]
-          args: ["up", "--setup-key-file", "/etc/netbird/setup-key", "--management-url", "https://api.netbird.io"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              # Read setup key from file
+              SETUP_KEY=$(cat /etc/netbird/setup-key)
+              exec /usr/local/bin/netbird service run \
+                --setup-key "$SETUP_KEY" \
+                --management-url https://api.netbird.io \
+                --log-level info
           securityContext:
             capabilities:
               add:

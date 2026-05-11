@@ -1,11 +1,10 @@
 # Lightweight etcd for ExternalDNS CoreDNS provider
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: etcd
   namespace: external-dns
 spec:
-  serviceName: etcd
   replicas: 1
   selector:
     matchLabels:
