@@ -84,14 +84,15 @@ for i in $(seq 1 "$LOOPS"); do
 
     UNHEALTHY_PODS=$(echo "$POD_OUTPUT" | \
       grep -vE "Running|Completed|Succeeded" | \
-      grep -vE "netbird|kube-proxy|kube-flannel" || true)
+      grep -vE "netbird|kube-proxy|kube-flannel" | \
+      grep -v "^$" || true)
 
     # If homeassistant PVC node is cordoned, exclude it from check
     if [ "$TARGET" = "$HA_NODE" ]; then
-      UNHEALTHY_PODS=$(echo "$UNHEALTHY_PODS" | grep -v "homeassistant" || true)
+      UNHEALTHY_PODS=$(echo "$UNHEALTHY_PODS" | grep -v "homeassistant" | grep -v "^$" || true)
     fi
 
-    UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . 2>/dev/null || true)
+    UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . 2>/dev/null || echo 0)
 
     if [ "${UNHEALTHY:-0}" -eq 0 ]; then
       ALL_HEALTHY=true
@@ -158,6 +159,12 @@ for i in $(seq 1 "$LOOPS"); do
   fi
 
   log "Loop $i complete — PASS=$PASS FAIL=$FAIL"
+
+  # Wait for cluster to fully recover before next loop
+  if [ "$i" -lt "$LOOPS" ]; then
+    log "Waiting 30s for cluster recovery..."
+    sleep 30
+  fi
   echo ""
 done
 
