@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: k8s-dashboard
+  namespace: k8s-dashboard
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: k8s-dashboard

@@ -1,0 +1,28 @@
+# Restrict ingress-nginx to only accept traffic from Netbird CIDR
+# Netbird default mesh uses 100.64.0.0/10 (CGNAT range)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-nginx-netbird-only
+  namespace: ingress-nginx
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # Netbird WireGuard mesh CIDR
+        - ipBlock:
+            cidr: 100.64.0.0/10
+        # Also allow intra-cluster traffic (pods/services)
+        - ipBlock:
+            cidr: 10.96.0.0/12
+        - ipBlock:
+            cidr: 10.244.0.0/16
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443

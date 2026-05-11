@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homeassistant
+  namespace: homeassistant
+  annotations:
+    cert-manager.io/cluster-issuer: lab-ca-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ha.lab.internal
+      secretName: homeassistant-tls
+  rules:
+    - host: ha.lab.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homeassistant
+                port:
+                  name: http

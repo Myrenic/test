@@ -1,3 +1,24 @@
-# GitHub actions binaries
-bin/
-secrets
+# Secrets - NEVER commit these
+age.agekey
+*.agekey
+**/secrets/*.yaml
+!**/secrets/*.sops.yaml
+
+# SOPS unencrypted intermediates
+*.dec.yaml
+*.cleartext.yaml
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Rust build artifacts
+dashboard/target/
+*.wasm.d
+
+# Misc
+*.bak
+*.tmp

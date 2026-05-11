@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: netbird
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: netbird
+  namespace: netbird
+spec:
+  interval: 24h
+  url: https://netbirdio.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: netbird-client
+  namespace: netbird
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: netbird
+      version: "0.*"
+      sourceRef:
+        kind: HelmRepository
+        name: netbird
+      interval: 12h
+  values:
+    auth:
+      setupKey:
+        existingSecret: netbird-setup-key
+        existingSecretKey: setup-key
+    netbird:
+      managementUrl: https://api.netbird.io
+    podSecurityContext:
+      capabilities:
+        add:
+          - NET_ADMIN
+          - SYS_RESOURCE
+    hostNetwork: true
+    kind: DaemonSet
+    priorityClassName: system-node-critical
+    tolerations:
+      - operator: Exists
