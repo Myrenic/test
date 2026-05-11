@@ -30,17 +30,8 @@ spec:
   values:
     crds:
       enabled: true
-    replicaCount: 2
-    podDisruptionBudget:
-      enabled: true
-      minAvailable: 1
+    replicaCount: 1
     webhook:
-      replicaCount: 2
-      podDisruptionBudget:
-        enabled: true
-        minAvailable: 1
+      replicaCount: 1
     cainjector:
-      replicaCount: 2
-      podDisruptionBudget:
-        enabled: true
-        minAvailable: 1
+      replicaCount: 1

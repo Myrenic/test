@@ -39,6 +39,6 @@ spec:
     env:
       - name: ETCD_URLS
         value: http://etcd.external-dns.svc:2379
-    replicaCount: 2
+    replicaCount: 1
     podDisruptionBudget:
       minAvailable: 1
