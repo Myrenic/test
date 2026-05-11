@@ -6,12 +6,9 @@ metadata:
   labels:
     app: homeassistant
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   selector:
     matchLabels:
       app: homeassistant
@@ -21,18 +18,6 @@ spec:
         app: homeassistant
     spec:
       priorityClassName: system-cluster-critical
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app
-                      operator: In
-                      values:
-                        - homeassistant
-                topologyKey: kubernetes.io/hostname
       containers:
         - name: homeassistant
           image: ghcr.io/home-assistant/home-assistant:2025.5
@@ -47,22 +32,22 @@ spec:
               mountPath: /config
           resources:
             requests:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 100m
+              memory: 128Mi
             limits:
-              memory: 1Gi
+              memory: 512Mi
           livenessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
       volumes:
         - name: config

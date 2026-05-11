@@ -6,7 +6,7 @@ metadata:
   labels:
     app: aiostreams
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: aiostreams
@@ -34,22 +34,27 @@ spec:
           ports:
             - containerPort: 3000
               name: http
+          env:
+            - name: BASE_URL
+              value: "http://aiostreams.aiostreams.svc:3000"
+            - name: SECRET_KEY
+              value: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 50m
+              memory: 64Mi
             limits:
-              memory: 512Mi
+              memory: 256Mi
           livenessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
       terminationGracePeriodSeconds: 30

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: k8s-dashboard
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: k8s-dashboard
@@ -31,25 +31,25 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: dashboard
-          image: ghcr.io/myrenic/k8s-dashboard:latest
+          image: nginx:1.27-alpine
           ports:
-            - containerPort: 8080
+            - containerPort: 80
               name: http
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 10m
+              memory: 16Mi
             limits:
-              memory: 256Mi
+              memory: 64Mi
           livenessProbe:
             httpGet:
-              path: /health
+              path: /
               port: http
             initialDelaySeconds: 5
             periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: /health
+              path: /
               port: http
             initialDelaySeconds: 3
             periodSeconds: 5
