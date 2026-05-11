@@ -36,8 +36,9 @@ spec:
     policy: upsert-only
     registry: txt
     txtOwnerId: lab-cluster
-    coredns:
-      etcdEndpoints: http://etcd.external-dns.svc:2379
+    env:
+      - name: ETCD_URLS
+        value: http://etcd.external-dns.svc:2379
     replicaCount: 2
     podDisruptionBudget:
       minAvailable: 1
