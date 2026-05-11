@@ -3,44 +3,55 @@ kind: Namespace
 metadata:
   name: netbird
 ---
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: netbird
-  namespace: netbird
-spec:
-  interval: 24h
-  url: https://netbirdio.github.io/helm-charts
----
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
   name: netbird-client
   namespace: netbird
+  labels:
+    app: netbird
 spec:
-  interval: 30m
-  chart:
+  selector:
+    matchLabels:
+      app: netbird
+  template:
+    metadata:
+      labels:
+        app: netbird
     spec:
-      chart: netbird
-      version: "0.*"
-      sourceRef:
-        kind: HelmRepository
-        name: netbird
-      interval: 12h
-  values:
-    auth:
-      setupKey:
-        existingSecret: netbird-setup-key
-        existingSecretKey: setup-key
-    netbird:
-      managementUrl: https://api.netbird.io
-    podSecurityContext:
-      capabilities:
-        add:
-          - NET_ADMIN
-          - SYS_RESOURCE
-    hostNetwork: true
-    kind: DaemonSet
-    priorityClassName: system-node-critical
-    tolerations:
-      - operator: Exists
+      hostNetwork: true
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: netbird
+          image: netbirdio/netbird:latest
+          command: ["/usr/local/bin/netbird"]
+          args: ["up", "--setup-key-file", "/etc/netbird/setup-key", "--management-url", "https://api.netbird.io"]
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_RESOURCE
+            privileged: true
+          volumeMounts:
+            - name: setup-key
+              mountPath: /etc/netbird
+              readOnly: true
+            - name: config
+              mountPath: /etc/netbird-config
+          env:
+            - name: NB_LOG_LEVEL
+              value: info
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: setup-key
+          secret:
+            secretName: netbird-setup-key
+        - name: config
+          emptyDir: {}

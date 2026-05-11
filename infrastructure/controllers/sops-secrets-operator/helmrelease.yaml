@@ -35,3 +35,5 @@ spec:
     extraEnv:
       - name: SOPS_AGE_KEY_FILE
         value: /etc/sops-age/age.agekey
+  install:
+    disableSchemaValidation: true
