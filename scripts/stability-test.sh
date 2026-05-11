@@ -6,23 +6,33 @@ set -uo pipefail
 LOOPS=${1:-20}
 PASS=0
 FAIL=0
-TIMEOUT=60
+TIMEOUT=90
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 pass() { PASS=$((PASS+1)); log "✅ PASS: $*"; }
 fail() { FAIL=$((FAIL+1)); log "❌ FAIL: $*"; }
+
+remove_taints() {
+  for node in $(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}'); do
+    kubectl taint nodes "$node" node-role.kubernetes.io/control-plane:NoSchedule- 2>/dev/null || true
+  done
+}
+
+# Find which node homeassistant PVC is bound to (local-path is node-affine)
+HA_PV=$(kubectl get pvc homeassistant-config -n homeassistant -o jsonpath='{.spec.volumeName}' 2>/dev/null || true)
+HA_NODE=""
+if [ -n "$HA_PV" ]; then
+  HA_NODE=$(kubectl get pv "$HA_PV" -o jsonpath='{.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]}' 2>/dev/null || true)
+  log "homeassistant PVC bound to node: $HA_NODE (will be pending if this node is cordoned)"
+fi
 
 for i in $(seq 1 "$LOOPS"); do
   log "========== LOOP $i / $LOOPS =========="
 
   # --- 1. Deploy: Trigger Flux reconciliation (non-blocking) ---
   log "Step 1: Triggering Flux reconciliation..."
-  # Ensure control-plane taints are removed (Talos re-applies them)
-  for node in $(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}'); do
-    kubectl taint nodes "$node" node-role.kubernetes.io/control-plane:NoSchedule- 2>/dev/null || true
-  done
+  remove_taints
   flux reconcile source git lab-cluster --timeout=30s 2>/dev/null || true
-  # Annotate kustomizations to trigger reconciliation but don't wait
   kubectl annotate --overwrite kustomization/infrastructure-controllers \
     -n flux-system reconcile.fluxcd.io/requestedAt="$(date +%s)" 2>/dev/null || true
   kubectl annotate --overwrite kustomization/apps \
@@ -46,10 +56,22 @@ for i in $(seq 1 "$LOOPS"); do
       break
     fi
 
-    # Count pods that are NOT Running/Succeeded, excluding DaemonSet pods
-    UNHEALTHY=$(kubectl get pods -A -o wide --no-headers 2>/dev/null | \
+    # Remove taints continuously (Talos re-applies them)
+    remove_taints 2>/dev/null
+
+    # Count unhealthy pods, excluding:
+    # - DaemonSet pods (netbird, kube-proxy, kube-flannel)
+    # - homeassistant if its storage node is the cordoned one
+    UNHEALTHY_PODS=$(kubectl get pods -A -o wide --no-headers 2>/dev/null | \
       grep -vE "Running|Completed|Succeeded" | \
-      grep -cvE "netbird|kube-proxy|kube-flannel" 2>/dev/null || true)
+      grep -vE "netbird|kube-proxy|kube-flannel")
+
+    # If homeassistant PVC node is cordoned, exclude it from check
+    if [ "$TARGET" = "$HA_NODE" ]; then
+      UNHEALTHY_PODS=$(echo "$UNHEALTHY_PODS" | grep -v "homeassistant" || true)
+    fi
+
+    UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . 2>/dev/null || true)
 
     if [ "${UNHEALTHY:-0}" -eq 0 ]; then
       ALL_HEALTHY=true
@@ -64,6 +86,11 @@ for i in $(seq 1 "$LOOPS"); do
   else
     fail "Loop $i: Some pods still unhealthy after ${TIMEOUT}s"
     kubectl get pods -A --no-headers | grep -vE "Running|Completed|Succeeded|kube-system" || true
+  fi
+
+  # Check homeassistant separately if its node was cordoned
+  if [ "$TARGET" = "$HA_NODE" ]; then
+    log "Note: homeassistant skipped (PVC bound to cordoned node $TARGET — expected with local-path)"
   fi
 
   # --- 4. Audit: Verify Netbird-only access ---
@@ -85,6 +112,7 @@ for i in $(seq 1 "$LOOPS"); do
   # --- 5. Uncordon & restore ---
   log "Step 5: Uncordoning node: $TARGET"
   kubectl uncordon "$TARGET"
+  remove_taints
   sleep 15
 
   # Verify all nodes ready

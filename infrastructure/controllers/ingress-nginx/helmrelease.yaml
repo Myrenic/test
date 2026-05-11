@@ -63,3 +63,9 @@ spec:
         compute-full-forwarded-for: "true"
       metrics:
         enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
