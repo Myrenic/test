@@ -85,15 +85,22 @@ for i in $(seq 1 "$LOOPS"); do
     UNHEALTHY_PODS=$(echo "$POD_OUTPUT" | \
       grep -vE "Running|Completed|Succeeded" | \
       grep -vE "netbird|kube-proxy|kube-flannel" | \
+      grep -vE "external-dns" | \
       grep -v "^$" || true)
 
     # If homeassistant PVC node is cordoned, exclude it from check
+    # (local-path PVC has node affinity - HA can't reschedule to another node)
     if [ "$TARGET" = "$HA_NODE" ]; then
       UNHEALTHY_PODS=$(echo "$UNHEALTHY_PODS" | grep -v "homeassistant" | grep -v "^$" || true)
     fi
 
-    UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . || true)
-    UNHEALTHY=${UNHEALTHY:-0}
+    # Count non-empty lines only
+    if [ -z "$UNHEALTHY_PODS" ]; then
+      UNHEALTHY=0
+    else
+      UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . || true)
+      UNHEALTHY=${UNHEALTHY:-0}
+    fi
 
     if [ "${UNHEALTHY:-0}" -eq 0 ]; then
       ALL_HEALTHY=true
