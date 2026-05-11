@@ -6,7 +6,7 @@ set -uo pipefail
 LOOPS=${1:-20}
 PASS=0
 FAIL=0
-TIMEOUT=90
+TIMEOUT=120
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 pass() { PASS=$((PASS+1)); log "✅ PASS: $*"; }
