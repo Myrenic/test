@@ -32,8 +32,8 @@ spec:
               mountPath: /config
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 50m
+              memory: 64Mi
             limits:
               memory: 512Mi
           livenessProbe:
