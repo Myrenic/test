@@ -46,7 +46,7 @@ async fn main() {
         .route("/api/events", get(get_events))
         .route("/api/problems", get(get_problems))
         .route("/api/stream", get(sse_stream))
-        .nest_service("/", ServeDir::new("/app/static"))
+        .fallback_service(ServeDir::new("/app/static"))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
