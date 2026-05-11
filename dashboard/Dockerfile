@@ -1,5 +1,5 @@
 # Stage 1: Build WASM frontend
-FROM rust:1.87-bookworm AS wasm-builder
+FROM rust:1.88-bookworm AS wasm-builder
 RUN rustup target add wasm32-unknown-unknown
 RUN cargo install trunk
 
@@ -13,7 +13,7 @@ WORKDIR /build/frontend
 RUN trunk build --release
 
 # Stage 2: Build server
-FROM rust:1.87-bookworm AS server-builder
+FROM rust:1.88-bookworm AS server-builder
 WORKDIR /build
 COPY Cargo.toml ./
 COPY shared/ shared/
