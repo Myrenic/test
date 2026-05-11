@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/k8s-dashboard
+  IMAGE_NAME: myrenic/k8s-dashboard
 
 jobs:
   build:

@@ -46,8 +46,8 @@ jobs:
           context: ./dashboard
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/k8s-dashboard:latest
-            ghcr.io/${{ github.repository_owner }}/k8s-dashboard:${{ github.sha }}
+            ghcr.io/myrenic/k8s-dashboard:latest
+            ghcr.io/myrenic/k8s-dashboard:${{ github.sha }}
 
   deploy:
     needs: [validate, build-dashboard]
