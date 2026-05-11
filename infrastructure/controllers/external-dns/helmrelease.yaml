@@ -40,5 +40,9 @@ spec:
       - name: ETCD_URLS
         value: http://etcd.external-dns.svc:2379
     replicaCount: 1
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
     podDisruptionBudget:
       minAvailable: 1

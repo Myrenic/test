@@ -18,6 +18,10 @@ spec:
         app: homeassistant
     spec:
       priorityClassName: system-cluster-critical
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: homeassistant
           image: ghcr.io/home-assistant/home-assistant:2025.5

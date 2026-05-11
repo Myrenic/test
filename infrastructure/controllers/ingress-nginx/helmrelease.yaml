@@ -35,6 +35,10 @@ spec:
     controller:
       replicaCount: 1
       priorityClassName: system-cluster-critical
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       podDisruptionBudget:
         enabled: true
         minAvailable: 1

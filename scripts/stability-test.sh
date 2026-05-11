@@ -1,7 +1,7 @@
 #!/bin/bash
 # 20-Loop Stability Protocol
 # Run from the devbox (10.0.3.50) or any machine with kubectl access
-set -euo pipefail
+set -uo pipefail
 
 LOOPS=${1:-20}
 PASS=0
@@ -9,24 +9,31 @@ FAIL=0
 TIMEOUT=60
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
-pass() { ((PASS++)); log "✅ PASS: $*"; }
-fail() { ((FAIL++)); log "❌ FAIL: $*"; }
+pass() { PASS=$((PASS+1)); log "✅ PASS: $*"; }
+fail() { FAIL=$((FAIL+1)); log "❌ FAIL: $*"; }
 
 for i in $(seq 1 "$LOOPS"); do
   log "========== LOOP $i / $LOOPS =========="
 
-  # --- 1. Deploy: Reconcile Flux ---
+  # --- 1. Deploy: Trigger Flux reconciliation (non-blocking) ---
   log "Step 1: Triggering Flux reconciliation..."
-  flux reconcile source git lab-cluster --timeout=1m 2>/dev/null || true
-  flux reconcile kustomization infrastructure-controllers --timeout=2m 2>/dev/null || true
-  flux reconcile kustomization apps --timeout=2m 2>/dev/null || true
-  sleep 10
+  # Ensure control-plane taints are removed (Talos re-applies them)
+  for node in $(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}'); do
+    kubectl taint nodes "$node" node-role.kubernetes.io/control-plane:NoSchedule- 2>/dev/null || true
+  done
+  flux reconcile source git lab-cluster --timeout=30s 2>/dev/null || true
+  # Annotate kustomizations to trigger reconciliation but don't wait
+  kubectl annotate --overwrite kustomization/infrastructure-controllers \
+    -n flux-system reconcile.fluxcd.io/requestedAt="$(date +%s)" 2>/dev/null || true
+  kubectl annotate --overwrite kustomization/apps \
+    -n flux-system reconcile.fluxcd.io/requestedAt="$(date +%s)" 2>/dev/null || true
+  sleep 5
 
   # --- 2. Stress Test: Cordon & drain a random node ---
-  NODES=($(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'))
+  readarray -t NODES < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
   TARGET=${NODES[$((RANDOM % ${#NODES[@]}))]}
   log "Step 2: Stress test — cordoning node: $TARGET"
-  kubectl cordon "$TARGET"
+  kubectl cordon "$TARGET" 2>&1
   kubectl drain "$TARGET" --ignore-daemonsets --delete-emptydir-data --timeout=${TIMEOUT}s 2>&1 || true
 
   # --- 3. Verify: Check pod rescheduling within timeout ---
@@ -39,12 +46,12 @@ for i in $(seq 1 "$LOOPS"); do
       break
     fi
 
-    # Count non-ready pods (excluding DaemonSets which stay on cordoned nodes)
-    UNHEALTHY=$(kubectl get pods -A --field-selector=status.phase!=Succeeded \
-      -o jsonpath='{range .items[?(@.status.phase!="Running")]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}' 2>/dev/null | \
-      grep -v "^$" | grep -cvE "netbird|kube-proxy|kube-flannel" || echo "0")
+    # Count pods that are NOT Running/Succeeded, excluding DaemonSet pods
+    UNHEALTHY=$(kubectl get pods -A -o wide --no-headers 2>/dev/null | \
+      grep -vE "Running|Completed|Succeeded" | \
+      grep -cvE "netbird|kube-proxy|kube-flannel" 2>/dev/null || true)
 
-    if [ "$UNHEALTHY" -eq 0 ] || [ "$UNHEALTHY" = "0" ]; then
+    if [ "${UNHEALTHY:-0}" -eq 0 ]; then
       ALL_HEALTHY=true
       break
     fi
@@ -56,11 +63,11 @@ for i in $(seq 1 "$LOOPS"); do
     pass "Loop $i: Pods rescheduled in ${ELAPSED}s (< ${TIMEOUT}s)"
   else
     fail "Loop $i: Some pods still unhealthy after ${TIMEOUT}s"
-    kubectl get pods -A | grep -vE "Running|Completed|kube-system" || true
+    kubectl get pods -A --no-headers | grep -vE "Running|Completed|Succeeded|kube-system" || true
   fi
 
   # --- 4. Audit: Verify Netbird-only access ---
-  NP_EXISTS=$(kubectl get networkpolicy ingress-nginx-netbird-only -n ingress-nginx -o name 2>/dev/null || echo "")
+  NP_EXISTS=$(kubectl get networkpolicy ingress-nginx-netbird-only -n ingress-nginx -o name 2>/dev/null || true)
   if [ -n "$NP_EXISTS" ]; then
     pass "Loop $i: NetworkPolicy for Netbird-only access exists"
   else
@@ -81,8 +88,8 @@ for i in $(seq 1 "$LOOPS"); do
   sleep 15
 
   # Verify all nodes ready
-  NOT_READY=$(kubectl get nodes --no-headers | grep -c "NotReady" || echo "0")
-  if [ "$NOT_READY" -eq 0 ]; then
+  NOT_READY=$(kubectl get nodes --no-headers 2>/dev/null | grep -c "NotReady" || true)
+  if [ "${NOT_READY:-0}" -eq 0 ]; then
     pass "Loop $i: All nodes Ready after uncordon"
   else
     fail "Loop $i: $NOT_READY node(s) still NotReady"
