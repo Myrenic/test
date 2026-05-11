@@ -6,4 +6,3 @@ resources:
   - ingress-nginx/
   - netbird/
   - external-dns/
-  - sops-secrets-operator/
