@@ -34,15 +34,10 @@ spec:
               memory: 64Mi
             limits:
               memory: 128Mi
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: longhorn
-        resources:
-          requests:
-            storage: 1Gi
+      volumes:
+        - name: data
+          emptyDir:
+            sizeLimit: 256Mi
 ---
 apiVersion: v1
 kind: Service
