@@ -5,4 +5,5 @@ resources:
   - cert-manager/
   - ingress-nginx/
   - netbird/
+  - netbird-dns-sync/
   - external-dns/

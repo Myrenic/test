@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbird-dns-sync
+  namespace: netbird
+data:
+  sync.py: |
+    import json
+    import os
+    import ssl
+    import sys
+    import urllib.error
+    import urllib.request
+
+
+    def log(message):
+        print(message, flush=True)
+
+
+    def request_json(url, headers=None, method="GET", body=None, cafile=None):
+        req = urllib.request.Request(url, method=method)
+        for key, value in (headers or {}).items():
+            req.add_header(key, value)
+        data = None
+        if body is not None:
+            data = json.dumps(body).encode("utf-8")
+            req.add_header("Content-Type", "application/json")
+        context = ssl.create_default_context(cafile=cafile) if cafile else None
+        with urllib.request.urlopen(req, data=data, context=context, timeout=30) as resp:
+            payload = resp.read()
+        if not payload:
+            return None
+        return json.loads(payload.decode("utf-8"))
+
+
+    def k8s_request(path):
+        host = os.environ["KUBERNETES_SERVICE_HOST"]
+        port = os.environ["KUBERNETES_SERVICE_PORT"]
+        token = open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r", encoding="utf-8").read().strip()
+        cafile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        return request_json(
+            f"https://{host}:{port}{path}",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+            cafile=cafile,
+        )
+
+
+    def netbird_request(path, method="GET", body=None):
+        token = os.environ["NETBIRD_API_TOKEN"]
+        return request_json(
+            f"https://api.netbird.io{path}",
+            headers={"Authorization": f"Token {token}", "Accept": "application/json"},
+            method=method,
+            body=body,
+        )
+
+
+    def get_ingress_hosts(zone_domain):
+        ingresses = k8s_request("/apis/networking.k8s.io/v1/ingresses")
+        hosts = set()
+        for item in ingresses.get("items", []):
+            spec = item.get("spec", {})
+            for rule in spec.get("rules", []):
+                host = rule.get("host")
+                if host and host.endswith(f".{zone_domain}"):
+                    hosts.add(host)
+        return sorted(hosts)
+
+
+    def get_netbird_node_ips():
+        nodes = k8s_request("/api/v1/nodes")
+        node_names = {item["metadata"]["name"] for item in nodes.get("items", [])}
+        peers = netbird_request("/api/peers")
+        ips = []
+        for peer in peers:
+            hostname = peer.get("hostname") or ""
+            if hostname in node_names and peer.get("connected") and peer.get("ip"):
+                ips.append(peer["ip"])
+        return sorted(set(ips))
+
+
+    def sync_zone(zone_id, zone_domain):
+        desired_hosts = get_ingress_hosts(zone_domain)
+        desired_ips = get_netbird_node_ips()
+
+        if not desired_hosts:
+            log(f"No ingress hosts found for {zone_domain}, nothing to sync")
+            return
+        if not desired_ips:
+            log("No connected NetBird node peers found, refusing to modify zone")
+            sys.exit(1)
+
+        existing_records = netbird_request(f"/api/dns/zones/{zone_id}/records")
+        existing_map = {}
+        for record in existing_records:
+            if record.get("type") != "A":
+                continue
+            existing_map.setdefault(record["name"], {})[record["content"]] = record["id"]
+
+        for host in desired_hosts:
+            current = existing_map.get(host, {})
+            for ip in desired_ips:
+                if ip not in current:
+                    record = netbird_request(
+                        f"/api/dns/zones/{zone_id}/records",
+                        method="POST",
+                        body={"name": host, "type": "A", "content": ip, "ttl": 60},
+                    )
+                    log(f"Created {host} -> {ip} ({record['id']})")
+            for ip, record_id in current.items():
+                if ip not in desired_ips:
+                    netbird_request(
+                        f"/api/dns/zones/{zone_id}/records/{record_id}",
+                        method="DELETE",
+                    )
+                    log(f"Deleted stale {host} -> {ip} ({record_id})")
+
+        log(f"Synced {len(desired_hosts)} hosts to {len(desired_ips)} NetBird node IPs")
+
+
+    if __name__ == "__main__":
+        try:
+            sync_zone(
+                zone_id=os.environ["NETBIRD_ZONE_ID"],
+                zone_domain=os.environ["NETBIRD_ZONE_DOMAIN"],
+            )
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            log(f"HTTP error {exc.code}: {detail}")
+            raise
