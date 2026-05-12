@@ -23,11 +23,26 @@ spec:
             defaultClassReplicaCount: 2
           preUpgradeChecker:
             jobEnabled: false
+          longhornManager:
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
+          longhornDriver:
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
+          namespaceOverride: longhorn-system
+    - repoURL: https://github.com/myrenic/test.git
+      targetRevision: HEAD
+      path: kubernetes/apps/longhorn
+      directory:
+        include: 'namespace.yaml'
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - Replace=true
       - ServerSideApply=true
