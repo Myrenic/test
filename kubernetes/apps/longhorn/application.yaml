@@ -21,11 +21,13 @@ spec:
             defaultDataLocality: best-effort
           persistence:
             defaultClassReplicaCount: 2
-          longhornUI:
-            replicas: 1
+          preUpgradeChecker:
+            jobEnabled: false
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - Replace=true
+      - ServerSideApply=true
