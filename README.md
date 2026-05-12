@@ -51,6 +51,13 @@ Real-time Kubernetes monitoring dashboard built with Rust:
 - **Features**: Node status, pod health, event logs, problem summary (CrashLoopBackOff, volume issues)
 - **Image**: Built via GitHub Actions, pushed to GHCR
 
+### Mobile access over NetBird
+
+- NetBird now auto-connects on every Talos node and persists its identity on the host.
+- ingress-nginx runs on every node with host ports `80/443`, so the dashboard is reachable over each node's NetBird address.
+- A hostless ingress is present for direct NetBird access. Use the node NetBird hostname from the mesh, for example `http://talos-4tv-hmc.netbird.cloud/`.
+- `dashboard.lab.internal` still depends on NetBird DNS nameserver distribution. If NetBird shows `Nameservers: 0/0 Available`, mobile clients will not resolve that name yet.
+
 ## HA & Resilience
 
 - All workloads tolerate `node-role.kubernetes.io/control-plane:NoSchedule` (all 3 nodes are control-plane)
