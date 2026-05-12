@@ -4,3 +4,4 @@ resources:
   - aiostreams/
   - homeassistant/
   - k8s-dashboard/
+  - lab-ca/
