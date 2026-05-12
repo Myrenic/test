@@ -1,0 +1,9 @@
+---
+cluster:
+  apiServer:
+    extraArgs:
+      default-not-ready-toleration-seconds: "30"
+      default-unreachable-toleration-seconds: "30"
+  controllerManager:
+    extraArgs:
+      node-monitor-grace-period: "30s"

@@ -1,4 +1,0 @@
-# local-path is configured via the HelmRelease values.
-# No additional StorageClasses needed for local-path-provisioner.
-# When Longhorn is enabled (requires iscsi-tools Talos extension),
-# add replicated StorageClasses here.

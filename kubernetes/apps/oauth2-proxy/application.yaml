@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oauth2-proxy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oauth2-proxy
+  sources:
+    - repoURL: https://oauth2-proxy.github.io/manifests
+      chart: oauth2-proxy
+      targetRevision: 7.12.13
+      helm:
+        valuesObject:
+          fullnameOverride: oauth2-proxy
+          replicaCount: 2
+          config:
+            clientID: ""
+            clientSecret: ""
+            cookieSecret: ""
+            existingSecret: oauth2-proxy-secrets
+            existingSecretClientIDKey: client-id
+            existingSecretClientSecretKey: client-secret
+            existingSecretCookieSecretKey: cookie-secret
+            configFile: |
+              provider = "oidc"
+              oidc_issuer_url = "https://login.microsoftonline.com/d18a2568-9941-4c45-9cb0-cb9cda2e9c31/v2.0"
+              email_domains = [ "*" ]
+              redirect_url = "https://auth.tuntelder.com/oauth2/callback"
+              cookie_domains = [ ".tuntelder.com" ]
+              whitelist_domains = [ ".tuntelder.com" ]
+              reverse_proxy = true
+              set_xauthrequest = true
+              cookie_secure = true
+              scope = "openid email profile"
+              upstreams = [ "static://202" ]
+              http_address = "0.0.0.0:4180"
+          extraArgs:
+            provider: oidc
+            oidc-issuer-url: https://login.microsoftonline.com/d18a2568-9941-4c45-9cb0-cb9cda2e9c31/v2.0
+            email-domain: "*"
+            redirect-url: https://auth.tuntelder.com/oauth2/callback
+            cookie-domain: .tuntelder.com
+            whitelist-domain: .tuntelder.com
+            set-xauthrequest: "true"
+            reverse-proxy: "true"
+            cookie-secure: "true"
+            scope: "openid email profile"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

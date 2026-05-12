@@ -1,0 +1,71 @@
+{
+  "proxmox": {
+    "url": "https://10.0.3.10:8006/",
+    "username": "root@pam",
+    "password": "CHANGE_ME",
+    "ssh_host": "10.0.3.10",
+    "ssh_user": "root"
+  },
+  "node_hosts": {
+    "node10": "10.0.3.10",
+    "node11": "10.0.3.11",
+    "node12": "10.0.3.12"
+  },
+  "devbox": {
+    "hostname": "devbox",
+    "node_name": "node10",
+    "vmid": 200,
+    "ip_address": "10.0.3.50",
+    "gateway": "10.0.3.1",
+    "cores": 2,
+    "memory": 2048,
+    "disk_size": 16,
+    "datastore_id": "nvme",
+    "github_repo": "https://github.com/myrenic/lab.git"
+  },
+  "omni": {
+    "hostname": "omni",
+    "node_name": "node11",
+    "vmid": 201,
+    "ip_address": "10.0.3.51",
+    "gateway": "10.0.3.1",
+    "cores": 4,
+    "memory": 4096,
+    "disk_size": 32,
+    "datastore_id": "nvme",
+    "admin_email": "admin@lab.local",
+    "admin_password": "CHANGE_ME"
+  },
+  "talos": {
+    "cluster_name": "lab-cluster",
+    "hosts": {
+      "talos-node10": {
+        "node_name": "node10",
+        "vmid": 300,
+        "ip_address": "10.0.3.60",
+        "gateway": "10.0.3.1",
+        "cores": 2,
+        "memory": 2048,
+        "disk_size": 20
+      },
+      "talos-node11": {
+        "node_name": "node11",
+        "vmid": 301,
+        "ip_address": "10.0.3.61",
+        "gateway": "10.0.3.1",
+        "cores": 2,
+        "memory": 2048,
+        "disk_size": 20
+      },
+      "talos-node12": {
+        "node_name": "node12",
+        "vmid": 302,
+        "ip_address": "10.0.3.62",
+        "gateway": "10.0.3.1",
+        "cores": 2,
+        "memory": 2048,
+        "disk_size": 20
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale-system
+  sources:
+    - repoURL: https://pkgs.tailscale.com/helmcharts
+      chart: tailscale-operator
+      targetRevision: 1.82.0
+      helm:
+        valuesObject:
+          oauth:
+            clientId: ""
+            clientSecret: ""
+          operatorConfig:
+            hostname: lab-k8s-operator
+          oauthSecretVolume:
+            secret:
+              secretName: tailscale-operator-oauth
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

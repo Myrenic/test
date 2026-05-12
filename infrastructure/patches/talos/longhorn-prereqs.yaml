@@ -1,0 +1,26 @@
+---
+machine:
+  install:
+    extensions:
+      - image: ghcr.io/siderolabs/iscsi-tools:v0.1.6
+      - image: ghcr.io/siderolabs/util-linux-tools:2.40.4
+  kernel:
+    modules:
+      - name: iscsi_tcp
+      - name: dm_thin_pool
+      - name: dm_crypt
+      - name: nvme
+      - name: nvme_tcp
+  kubelet:
+    extraMounts:
+      - destination: /var/lib/longhorn
+        type: bind
+        source: /var/lib/longhorn
+        options:
+          - bind
+          - rshared
+          - rw
+  sysctls:
+    vm.panic_on_oom: "0"
+    vm.overcommit_memory: "1"
+    kernel.panic: "10"
