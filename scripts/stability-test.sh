@@ -120,16 +120,13 @@ for i in $(seq 1 "$LOOPS"); do
       continue
     fi
 
-    # Find unhealthy pods, excluding:
-    #   Running/Completed/Succeeded/Terminating = expected states
-    #   kube-system = managed by Talos, not our concern
-    #   DaemonSet pods = always present on each node
-    #   external-dns + cert-manager + local-path = infrastructure, self-heals
+    # Find unhealthy pods — only check APP workloads
+    # Exclude all infrastructure/system namespaces that self-heal:
+    #   kube-system, flux-system, cert-manager, external-dns, local-path-storage, netbird
+    # Check: aiostreams, homeassistant, k8s-dashboard, ingress-nginx
     UNHEALTHY_PODS=$(echo "$POD_LINES" | \
       grep -vE "Running|Completed|Succeeded|Terminating" | \
-      grep -vE "^kube-system" | \
-      grep -vE "netbird|kube-proxy|kube-flannel" | \
-      grep -vE "external-dns|cert-manager|local-path" | \
+      grep -vE "^kube-system|^flux-system|^cert-manager|^external-dns|^local-path|^netbird" | \
       grep -v "^$" || true)
 
     # Exclude homeassistant if its PVC-bound node is the one we cordoned
