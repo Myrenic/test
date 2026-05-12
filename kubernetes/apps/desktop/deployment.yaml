@@ -11,7 +11,7 @@ spec:
   template:
     metadata:
       annotations:
-        desktop.test.tuntelder.com/mobile-profile: "v2"
+        desktop.test.tuntelder.com/mobile-profile: "v3"
       labels:
         app: webtop
     spec:
@@ -22,9 +22,36 @@ spec:
         - key: node-role.kubernetes.io/master
           operator: Exists
           effect: NoSchedule
+      initContainers:
+        - name: apply-mobile-profile
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              target="/config/.config/xfce4/xfconf/xfce-perchannel-xml"
+              version_file="/config/.mobile-layout-version"
+              desired="v3"
+              current=""
+              if [ -f "${version_file}" ]; then
+                current="$(cat "${version_file}")"
+              fi
+
+              if [ "${current}" != "${desired}" ]; then
+                mkdir -p "${target}"
+                cp /mobile-defaults/*.xml "${target}/"
+                printf '%s\n' "${desired}" > "${version_file}"
+                chown -R 1000:1000 /config/.config "${version_file}"
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: mobile-defaults
+              mountPath: /mobile-defaults
       containers:
         - name: webtop
-          image: lscr.io/linuxserver/webtop:ubuntu-kde
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
           ports:
             - name: http
               containerPort: 3000
@@ -40,9 +67,17 @@ spec:
             - name: START_DOCKER
               value: "false"
             - name: PIXELFLUX_WAYLAND
-              value: "true"
+              value: "false"
             - name: SELKIES_SCALING_DPI
-              value: "160"
+              value: "192"
+            - name: SELKIES_IS_MANUAL_RESOLUTION_MODE
+              value: "true|locked"
+            - name: SELKIES_MANUAL_WIDTH
+              value: "1280"
+            - name: SELKIES_MANUAL_HEIGHT
+              value: "800"
+            - name: SELKIES_USE_CSS_SCALING
+              value: "true|locked"
             - name: SELKIES_GAMEPAD_ENABLED
               value: "false|locked"
             - name: SELKIES_SECOND_SCREEN
@@ -70,3 +105,6 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: webtop-config
+        - name: mobile-defaults
+          configMap:
+            name: webtop-mobile-defaults

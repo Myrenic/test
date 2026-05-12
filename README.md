@@ -16,7 +16,7 @@ Helm-based homelab Kubernetes platform on Proxmox, managed by ArgoCD.
 | **Auth** | OAuth2 Proxy (Azure Entra ID OIDC, Traefik ForwardAuth) |
 | **VPN** | Tailscale subnet router |
 | **Backup** | Velero (S3-compatible backend) |
-| **Workloads** | Mobile-tuned Webtop browser desktop using KDE/Wayland (Longhorn PVC, OAuth2 protected) |
+| **Workloads** | Mobile-tuned Webtop browser desktop (XFCE/X11 profile for phone-friendly access, Longhorn PVC, OAuth2 protected) |
 
 ## Repository Structure
 
@@ -44,7 +44,7 @@ kubernetes/
     tailscale/          # Tailscale subnet router
     velero/             # Velero backup
     traefik-config/     # Traefik middlewares (ForwardAuth chain)
-    desktop/            # Mobile-tuned Webtop browser desktop (KDE/Wayland)
+    desktop/            # Mobile-tuned Webtop browser desktop
   secrets/              # SOPS-encrypted secrets
 ```
 
