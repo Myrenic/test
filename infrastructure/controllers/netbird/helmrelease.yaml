@@ -32,14 +32,34 @@ spec:
           image: netbirdio/netbird:latest
           command: ["/bin/sh"]
           args:
-            - -c
+            - -ec
             - |
-              # Read setup key from file
-              SETUP_KEY=$(cat /etc/netbird/setup-key)
-              exec /usr/local/bin/netbird service run \
-                --setup-key "$SETUP_KEY" \
+              /usr/local/bin/netbird service run \
+                --setup-key-file /etc/netbird/setup-key \
                 --management-url https://api.netbird.io \
-                --log-level info
+                --hostname "${NODE_NAME}" \
+                --log-file console \
+                --log-level info &
+              pid="$!"
+
+              for _ in $(seq 1 30); do
+                [ -S /var/run/netbird.sock ] && break
+                sleep 1
+              done
+
+              status="$(/usr/local/bin/netbird status 2>/dev/null || true)"
+              case "$status" in
+                *Connected*) ;;
+                *)
+                  /usr/local/bin/netbird up \
+                    --setup-key-file /etc/netbird/setup-key \
+                    --management-url https://api.netbird.io \
+                    --hostname "${NODE_NAME}" \
+                    --log-file console
+                  ;;
+              esac
+
+              wait "$pid"
           securityContext:
             capabilities:
               add:
@@ -50,11 +70,15 @@ spec:
             - name: setup-key
               mountPath: /etc/netbird
               readOnly: true
-            - name: config
-              mountPath: /etc/netbird-config
+            - name: state
+              mountPath: /var/lib/netbird
           env:
             - name: NB_LOG_LEVEL
               value: info
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           resources:
             requests:
               cpu: 50m
@@ -65,5 +89,7 @@ spec:
         - name: setup-key
           secret:
             secretName: netbird-setup-key
-        - name: config
-          emptyDir: {}
+        - name: state
+          hostPath:
+            path: /var/lib/netbird
+            type: DirectoryOrCreate

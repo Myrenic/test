@@ -6,4 +6,5 @@ resources:
   - service.yaml
   - pdb.yaml
   - ingress.yaml
+  - ingress-netbird.yaml
   - rbac.yaml

@@ -33,12 +33,17 @@ spec:
       interval: 12h
   values:
     controller:
-      replicaCount: 1
+      kind: DaemonSet
       priorityClassName: system-cluster-critical
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
+      hostPort:
+        enabled: true
+      publishService:
+        enabled: false
+      reportNodeInternalIp: true
       podDisruptionBudget:
         enabled: true
         minAvailable: 1
