@@ -44,6 +44,13 @@ for i in $(seq 1 "$LOOPS"); do
   log "========== LOOP $i / $LOOPS =========="
 
   # --- 0. Pre-check: ensure cluster is clean before starting ---
+  # Wait for API to be reachable before starting (Omni proxy reconnection)
+  log "Waiting for API..."
+  for _ in $(seq 1 30); do
+    if kubectl get nodes &>/dev/null; then break; fi
+    sleep 3
+  done
+
   remove_taints
   wait_cluster_clean
 
@@ -59,7 +66,7 @@ for i in $(seq 1 "$LOOPS"); do
   # --- 2. Stress Test: Cordon & drain a random node ---
   # Retry getting node list (API may be temporarily unavailable after drain)
   NODES=()
-  for _ in $(seq 1 10); do
+  for _ in $(seq 1 20); do
     readarray -t NODES < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null)
     if [ "${#NODES[@]}" -gt 0 ]; then break; fi
     sleep 3
