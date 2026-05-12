@@ -16,7 +16,7 @@ Helm-based homelab Kubernetes platform on Proxmox, managed by ArgoCD.
 | **Auth** | OAuth2 Proxy (Azure Entra ID OIDC, Traefik ForwardAuth) |
 | **VPN** | Tailscale subnet router |
 | **Backup** | Velero (S3-compatible backend) |
-| **Workloads** | Mobile-tuned Webtop browser desktop (Longhorn PVC, OAuth2 protected) |
+| **Workloads** | Mobile-tuned Webtop browser desktop using KDE/Wayland (Longhorn PVC, OAuth2 protected) |
 
 ## Repository Structure
 
@@ -44,7 +44,7 @@ kubernetes/
     tailscale/          # Tailscale subnet router
     velero/             # Velero backup
     traefik-config/     # Traefik middlewares (ForwardAuth chain)
-    desktop/            # Mobile-tuned Webtop browser desktop
+    desktop/            # Mobile-tuned Webtop browser desktop (KDE/Wayland)
   secrets/              # SOPS-encrypted secrets
 ```
 
@@ -146,6 +146,9 @@ kubectl get applications -n argocd
 
 # Access Argo CD UI (port-forward)
 kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+# Or open the routed UI
+# https://argocd.test.tuntelder.com
 
 # Check Longhorn UI
 kubectl port-forward svc/longhorn-frontend -n longhorn-system 8081:80
