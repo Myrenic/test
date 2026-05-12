@@ -11,7 +11,7 @@ spec:
   template:
     metadata:
       annotations:
-        desktop.test.tuntelder.com/mobile-profile: "v1"
+        desktop.test.tuntelder.com/mobile-profile: "v2"
       labels:
         app: webtop
     spec:
@@ -22,36 +22,9 @@ spec:
         - key: node-role.kubernetes.io/master
           operator: Exists
           effect: NoSchedule
-      initContainers:
-        - name: apply-mobile-profile
-          image: lscr.io/linuxserver/webtop:ubuntu-xfce
-          command:
-            - /bin/sh
-            - -c
-            - |
-              set -eu
-              target="/config/.config/xfce4/xfconf/xfce-perchannel-xml"
-              version_file="/config/.mobile-layout-version"
-              desired="v1"
-              current=""
-              if [ -f "${version_file}" ]; then
-                current="$(cat "${version_file}")"
-              fi
-
-              if [ "${current}" != "${desired}" ]; then
-                mkdir -p "${target}"
-                cp /mobile-defaults/*.xml "${target}/"
-                printf '%s\n' "${desired}" > "${version_file}"
-                chown -R 1000:1000 /config/.config "${version_file}"
-              fi
-          volumeMounts:
-            - name: config
-              mountPath: /config
-            - name: mobile-defaults
-              mountPath: /mobile-defaults
       containers:
         - name: webtop
-          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          image: lscr.io/linuxserver/webtop:ubuntu-kde
           ports:
             - name: http
               containerPort: 3000
@@ -66,8 +39,10 @@ spec:
               value: Tuntelder Desktop
             - name: START_DOCKER
               value: "false"
+            - name: PIXELFLUX_WAYLAND
+              value: "true"
             - name: SELKIES_SCALING_DPI
-              value: "144"
+              value: "160"
             - name: SELKIES_GAMEPAD_ENABLED
               value: "false|locked"
             - name: SELKIES_SECOND_SCREEN
@@ -95,6 +70,3 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: webtop-config
-        - name: mobile-defaults
-          configMap:
-            name: webtop-mobile-defaults
