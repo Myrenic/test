@@ -58,6 +58,7 @@ Real-time Kubernetes monitoring dashboard built with Rust:
 - A hostless ingress is present for direct NetBird access. Use the node NetBird hostname from the mesh, for example `http://talos-4tv-hmc.netbird.cloud/`.
 - `dashboard.lab.internal` still depends on NetBird DNS nameserver distribution. If NetBird shows `Nameservers: 0/0 Available`, mobile clients will not resolve that name yet.
 - The `lab.internal` zone is now kept in sync automatically by the `netbird-dns-sync` CronJob. It discovers current ingress hosts and current connected Talos NetBird peer IPs, then updates the NetBird DNS zone through the API every 5 minutes.
+- `ca.lab.internal` serves the internal lab CA certificate over plain HTTP so iPhone/Mac clients can install and trust the `*.lab.internal` TLS certificates.
 
 ## HA & Resilience
 
