@@ -13,21 +13,21 @@ spec:
   sources:
     - repoURL: https://vmware-tanzu.github.io/helm-charts
       chart: velero
-      targetRevision: 8.6.0
+      targetRevision: 12.0.1
       helm:
         valuesObject:
           credentials:
-            useSecret: true
-            existingSecret: velero-credentials
+            useSecret: false
           configuration:
             backupStorageLocation:
               - name: default
                 provider: aws
                 bucket: lab-backups
+                default: true
                 config:
                   region: auto
-                  s3ForcePathStyle: true
-                  s3Url: https://BUCKET_ENDPOINT
+                  s3ForcePathStyle: "true"
+                  s3Url: https://placeholder.example.com
             volumeSnapshotLocation:
               - name: default
                 provider: aws
@@ -40,7 +40,8 @@ spec:
                   - "*"
           initContainers:
             - name: velero-plugin-for-aws
-              image: velero/velero-plugin-for-aws:v1.11.1
+              image: velero/velero-plugin-for-aws:v1.13.1
+              imagePullPolicy: IfNotPresent
               volumeMounts:
                 - mountPath: /target
                   name: plugins

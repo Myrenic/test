@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://charts.longhorn.io
       chart: longhorn
-      targetRevision: 1.8.1
+      targetRevision: 1.11.2
       helm:
         valuesObject:
           defaultSettings:
@@ -23,11 +23,6 @@ spec:
             defaultClassReplicaCount: 2
           longhornUI:
             replicas: 1
-    - repoURL: https://github.com/myrenic/test.git
-      targetRevision: HEAD
-      path: kubernetes/apps/longhorn
-      directory:
-        include: namespace.yaml
   syncPolicy:
     automated:
       prune: true

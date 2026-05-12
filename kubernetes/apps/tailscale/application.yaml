@@ -13,17 +13,11 @@ spec:
   sources:
     - repoURL: https://pkgs.tailscale.com/helmcharts
       chart: tailscale-operator
-      targetRevision: 1.82.0
+      targetRevision: 1.96.5
       helm:
         valuesObject:
-          oauth:
-            clientId: ""
-            clientSecret: ""
           operatorConfig:
             hostname: lab-k8s-operator
-          oauthSecretVolume:
-            secret:
-              secretName: tailscale-operator-oauth
   syncPolicy:
     automated:
       prune: true
