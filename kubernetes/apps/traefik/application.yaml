@@ -23,12 +23,12 @@ spec:
             type: LoadBalancer
           ports:
             web:
-              redirections:
-                entryPoint:
-                  to: websecure
-            websecure:
-              tls:
-                enabled: true
+              http:
+                redirections:
+                  entryPoint:
+                    to: websecure
+                    scheme: https
+                    permanent: true
           providers:
             kubernetesCRD:
               enabled: true
