@@ -8,16 +8,18 @@ age.agekey
 *.dec.yaml
 *.cleartext.yaml
 
+# OpenTofu / Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+infrastructure/infra.json
+
 # IDE / OS
 .idea/
 .vscode/
 .DS_Store
 *.swp
 *.swo
-
-# Rust build artifacts
-dashboard/target/
-*.wasm.d
 
 # Misc
 *.bak

@@ -2,14 +2,7 @@
   "proxmox": {
     "url": "https://10.0.3.10:8006/",
     "username": "root@pam",
-    "password": "CHANGE_ME",
-    "ssh_host": "10.0.3.10",
-    "ssh_user": "root"
-  },
-  "node_hosts": {
-    "node10": "10.0.3.10",
-    "node11": "10.0.3.11",
-    "node12": "10.0.3.12"
+    "password": "CHANGE_ME"
   },
   "devbox": {
     "hostname": "devbox",
@@ -21,51 +14,49 @@
     "memory": 2048,
     "disk_size": 16,
     "datastore_id": "nvme",
-    "github_repo": "https://github.com/myrenic/lab.git"
-  },
-  "omni": {
-    "hostname": "omni",
-    "node_name": "node11",
-    "vmid": 201,
-    "ip_address": "10.0.3.51",
-    "gateway": "10.0.3.1",
-    "cores": 4,
-    "memory": 4096,
-    "disk_size": 32,
-    "datastore_id": "nvme",
-    "admin_email": "admin@lab.local",
-    "admin_password": "CHANGE_ME"
+    "github_repo": "https://github.com/myrenic/test.git"
   },
   "talos": {
     "cluster_name": "lab-cluster",
-    "hosts": {
-      "talos-node10": {
-        "node_name": "node10",
-        "vmid": 300,
-        "ip_address": "10.0.3.60",
-        "gateway": "10.0.3.1",
-        "cores": 2,
-        "memory": 2048,
-        "disk_size": 20
-      },
-      "talos-node11": {
-        "node_name": "node11",
-        "vmid": 301,
-        "ip_address": "10.0.3.61",
-        "gateway": "10.0.3.1",
-        "cores": 2,
-        "memory": 2048,
-        "disk_size": 20
-      },
-      "talos-node12": {
-        "node_name": "node12",
-        "vmid": 302,
-        "ip_address": "10.0.3.62",
-        "gateway": "10.0.3.1",
-        "cores": 2,
-        "memory": 2048,
-        "disk_size": 20
-      }
+    "version": "v1.12.5",
+    "img_id": "613e1592b2da41ae5e265e8789429f22e121aab91cb4deb6bc3c0b6262961245",
+    "control_plane_identifier": "cp"
+  },
+  "hosts": {
+    "lab-cp-1": {
+      "name": "lab-cp-1",
+      "cores": 4,
+      "memory": 8192,
+      "ip_addr": "10.0.3.60",
+      "gateway": "10.0.3.1",
+      "node_name": "node10",
+      "datastore_id": "nvme",
+      "disk_size": 50
+    },
+    "lab-cp-2": {
+      "name": "lab-cp-2",
+      "cores": 4,
+      "memory": 8192,
+      "ip_addr": "10.0.3.61",
+      "gateway": "10.0.3.1",
+      "node_name": "node11",
+      "datastore_id": "nvme",
+      "disk_size": 50
+    },
+    "lab-cp-3": {
+      "name": "lab-cp-3",
+      "cores": 4,
+      "memory": 8192,
+      "ip_addr": "10.0.3.62",
+      "gateway": "10.0.3.1",
+      "node_name": "node12",
+      "datastore_id": "nvme",
+      "disk_size": 50
     }
+  },
+  "node_hosts": {
+    "node10": "10.0.3.10",
+    "node11": "10.0.3.11",
+    "node12": "10.0.3.12"
   }
 }
