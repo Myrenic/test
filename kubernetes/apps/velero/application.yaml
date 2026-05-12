@@ -17,20 +17,27 @@ spec:
       helm:
         valuesObject:
           credentials:
-            useSecret: false
+            useSecret: true
+            existingSecret: velero-credentials
           configuration:
             backupStorageLocation:
               - name: default
-                provider: aws
-                bucket: lab-backups
+                provider: azure
+                bucket: velero
                 default: true
+                credential:
+                  name: velero-credentials
+                  key: cloud
                 config:
-                  region: auto
-                  s3ForcePathStyle: "true"
-                  s3Url: https://placeholder.example.com
+                  resourceGroup: Velero_Backups
+                  storageAccount: velero76b1f66a064d
+            defaultBackupStorageLocation: default
+            defaultBackupTTL: "168h"
+            defaultVolumesToFsBackup: true
+            uploaderType: kopia
             volumeSnapshotLocation:
               - name: default
-                provider: aws
+                provider: azure
           schedules:
             daily:
               schedule: "0 2 * * *"
@@ -39,8 +46,8 @@ spec:
                 includedNamespaces:
                   - "*"
           initContainers:
-            - name: velero-plugin-for-aws
-              image: velero/velero-plugin-for-aws:v1.13.1
+            - name: velero-plugin-for-microsoft-azure
+              image: velero/velero-plugin-for-microsoft-azure:v1.14.0
               imagePullPolicy: IfNotPresent
               volumeMounts:
                 - mountPath: /target
