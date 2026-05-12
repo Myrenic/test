@@ -16,7 +16,7 @@ Helm-based homelab Kubernetes platform on Proxmox, managed by ArgoCD.
 | **Auth** | OAuth2 Proxy (Azure Entra ID OIDC, Traefik ForwardAuth) |
 | **VPN** | Tailscale subnet router |
 | **Backup** | Velero (S3-compatible backend) |
-| **Workloads** | Webtop browser desktop (Longhorn PVC, OAuth2 protected) |
+| **Workloads** | Mobile-tuned Webtop browser desktop (Longhorn PVC, OAuth2 protected) |
 
 ## Repository Structure
 
@@ -44,7 +44,7 @@ kubernetes/
     tailscale/          # Tailscale subnet router
     velero/             # Velero backup
     traefik-config/     # Traefik middlewares (ForwardAuth chain)
-    desktop/            # Webtop browser desktop
+    desktop/            # Mobile-tuned Webtop browser desktop
   secrets/              # SOPS-encrypted secrets
 ```
 
@@ -112,6 +112,13 @@ Approve the advertised routes for `lab-k8s-subnet-router` in the Tailscale admin
 - `10.96.0.0/12` for Kubernetes services
 - `10.244.0.0/16` for Kubernetes pods
 
+## Ownership and secret flow
+
+- OpenTofu owns the Proxmox infrastructure and Talos machine configuration.
+- Cilium and Argo CD are the direct-bootstrap components.
+- Argo CD owns the steady-state platform applications after the root app is applied.
+- SOPS-encrypted values live under `kubernetes/secrets/*.sops.yaml`; bootstrap secrets are applied from those encrypted sources before Argo CD takes over.
+
 ## Destroy / Rebuild
 
 ```bash
@@ -119,6 +126,16 @@ cd infrastructure
 ./tofu.sh talos destroy    # Destroys VMs only
 ./tofu.sh talos apply      # Recreates everything
 # Then repeat bootstrap steps 2-6
+```
+
+## Recovery
+
+```bash
+# Inspect available Velero backups
+velero backup get
+
+# Restore a workload backup after the platform has resynced
+velero restore create --from-backup <backup-name>
 ```
 
 ## Operations
