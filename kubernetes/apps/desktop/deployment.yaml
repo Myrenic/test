@@ -10,6 +10,8 @@ spec:
       app: webtop
   template:
     metadata:
+      annotations:
+        desktop.test.tuntelder.com/mobile-profile: "v1"
       labels:
         app: webtop
     spec:
@@ -20,6 +22,33 @@ spec:
         - key: node-role.kubernetes.io/master
           operator: Exists
           effect: NoSchedule
+      initContainers:
+        - name: apply-mobile-profile
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              target="/config/.config/xfce4/xfconf/xfce-perchannel-xml"
+              version_file="/config/.mobile-layout-version"
+              desired="v1"
+              current=""
+              if [ -f "${version_file}" ]; then
+                current="$(cat "${version_file}")"
+              fi
+
+              if [ "${current}" != "${desired}" ]; then
+                mkdir -p "${target}"
+                cp /mobile-defaults/*.xml "${target}/"
+                printf '%s\n' "${desired}" > "${version_file}"
+                chown -R 1000:1000 /config/.config "${version_file}"
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: mobile-defaults
+              mountPath: /mobile-defaults
       containers:
         - name: webtop
           image: lscr.io/linuxserver/webtop:ubuntu-xfce
@@ -33,6 +62,26 @@ spec:
               value: "1000"
             - name: TZ
               value: Europe/Amsterdam
+            - name: TITLE
+              value: Tuntelder Desktop
+            - name: START_DOCKER
+              value: "false"
+            - name: SELKIES_SCALING_DPI
+              value: "144"
+            - name: SELKIES_GAMEPAD_ENABLED
+              value: "false|locked"
+            - name: SELKIES_SECOND_SCREEN
+              value: "false|locked"
+            - name: SELKIES_UI_SIDEBAR_SHOW_GAMEPADS
+              value: "false|locked"
+            - name: SELKIES_UI_SIDEBAR_SHOW_SHARING
+              value: "false|locked"
+            - name: SELKIES_UI_SIDEBAR_SHOW_STATS
+              value: "false|locked"
+            - name: SELKIES_UI_SIDEBAR_SHOW_TRACKPAD
+              value: "true|locked"
+            - name: SELKIES_UI_SIDEBAR_SHOW_KEYBOARD_BUTTON
+              value: "true|locked"
           resources:
             requests:
               cpu: 500m
@@ -46,3 +95,6 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: webtop-config
+        - name: mobile-defaults
+          configMap:
+            name: webtop-mobile-defaults
