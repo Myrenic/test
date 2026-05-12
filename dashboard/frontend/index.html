@@ -5,6 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>K8s Dashboard</title>
     <link data-trunk rel="rust" data-wasm-opt="z" data-target-name="dashboard_frontend" />
+    <script>
+        const FALLBACK_DELAY_MS = 2500;
+        let fallbackStarted = false;
+
+        function hasWasmDashboard() {
+            return Boolean(document.body.querySelector(".container"));
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function renderFallback(overview) {
+            const app = document.getElementById("app");
+            if (!app) return;
+
+            const problems = overview && overview.problems ? overview.problems : null;
+            const problemCount = problems
+                ? (problems.crashloop_count || 0)
+                    + (problems.pending_count || 0)
+                    + (problems.failed_count || 0)
+                    + (problems.longhorn_issues || 0)
+                : 0;
+
+            const nodeList = overview && overview.nodes ? overview.nodes : [];
+            const podList = overview && overview.pods ? overview.pods : [];
+
+            const nodes = nodeList.map((node) => `
+                <tr>
+                    <td>${escapeHtml(node.name)}</td>
+                    <td><span class="tag ${node.status === "Ready" ? "tag-ready" : "tag-notready"}">${escapeHtml(node.status)}</span></td>
+                    <td>${escapeHtml((node.roles || []).join(", ") || "-")}</td>
+                    <td>${escapeHtml(node.version || "-")}</td>
+                </tr>
+            `).join("");
+
+            const pods = podList.slice(0, 20).map((pod) => `
+                <tr>
+                    <td>${escapeHtml(pod.namespace)}</td>
+                    <td>${escapeHtml(pod.name)}</td>
+                    <td><span class="tag ${
+                        pod.status === "Running" ? "tag-running" :
+                        pod.status === "Pending" ? "tag-pending" :
+                        "tag-crash"
+                    }">${escapeHtml(pod.status)}</span></td>
+                    <td>${escapeHtml(pod.restarts != null ? pod.restarts : 0)}</td>
+                </tr>
+            `).join("");
+
+            app.innerHTML = `
+                <div class="container">
+                    <header>
+                        <h1>⎈ K8s Lab Dashboard</h1>
+                        <span class="status-badge ${problemCount === 0 ? "status-healthy" : "status-unhealthy"}">
+                            ${problemCount === 0 ? "✓ Healthy" : `⚠ ${problemCount} issues`}
+                        </span>
+                    </header>
+                    <div class="card" style="margin-bottom: 1rem;">
+                        <h2>Compatibility fallback</h2>
+                        <p style="color: var(--text-dim);">
+                            The WebAssembly app did not start in this browser, so a plain JavaScript view is being used instead.
+                        </p>
+                    </div>
+                    <div class="grid">
+                        <div class="card">
+                            <h2>Nodes</h2>
+                            <table>
+                                <thead><tr><th>Name</th><th>Status</th><th>Roles</th><th>Version</th></tr></thead>
+                                <tbody>${nodes || '<tr><td colspan="4">No node data yet.</td></tr>'}</tbody>
+                            </table>
+                        </div>
+                        <div class="card">
+                            <h2>Pods</h2>
+                            <table>
+                                <thead><tr><th>Namespace</th><th>Name</th><th>Status</th><th>Restarts</th></tr></thead>
+                                <tbody>${pods || '<tr><td colspan="4">No pod data yet.</td></tr>'}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function startFallback() {
+            if (fallbackStarted || hasWasmDashboard()) return;
+            fallbackStarted = true;
+
+            const app = document.getElementById("app");
+            if (app) {
+                app.innerHTML = '<div class="loading">Loading dashboard...</div>';
+            }
+
+            try {
+                const response = await fetch("/api/overview", { cache: "no-store" });
+                const overview = await response.json();
+                if (!hasWasmDashboard()) {
+                    renderFallback(overview);
+                }
+            } catch (_error) {
+                if (app && !hasWasmDashboard()) {
+                    app.innerHTML = '<div class="loading">Dashboard fallback could not reach the API.</div>';
+                }
+            }
+        }
+
+        addEventListener("TrunkApplicationStarted", () => {
+            setTimeout(() => {
+                if (hasWasmDashboard()) {
+                    const app = document.getElementById("app");
+                    if (app) app.remove();
+                } else {
+                    startFallback();
+                }
+            }, FALLBACK_DELAY_MS);
+        });
+
+        addEventListener("error", () => {
+            if (!hasWasmDashboard()) {
+                startFallback();
+            }
+        });
+
+        setTimeout(() => {
+            if (!hasWasmDashboard()) {
+                startFallback();
+            }
+        }, FALLBACK_DELAY_MS * 2);
+    </script>
     <style>
         :root {
             --bg: #0d1117; --surface: #161b22; --border: #30363d;
@@ -47,6 +180,6 @@
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app" class="loading">Loading dashboard...</div>
 </body>
 </html>
