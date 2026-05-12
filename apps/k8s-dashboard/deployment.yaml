@@ -35,7 +35,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: dashboard
-          image: ghcr.io/myrenic/k8s-dashboard:6d4af487b92de663a489bfcddd27dc8ae8a47b99
+          image: ghcr.io/myrenic/k8s-dashboard:a4b40b9a4532e17d0633c3abcbcf8e048d01aaa7
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
