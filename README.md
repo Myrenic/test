@@ -84,7 +84,7 @@ helm install cilium cilium/cilium --version 1.17.3 --namespace kube-system \
 helm repo add argo https://argoproj.github.io/argo-helm
 kubectl create namespace argocd
 helm install argocd argo/argo-cd --namespace argocd \
-  --set 'configs.params.server\.insecure=true'
+  -f <(sops -d kubernetes/argocd/bootstrap-values.sops.yaml)
 
 # 5. Create secrets (before applying root app)
 kubectl create secret generic cloudflare-api-token -n cert-manager \
@@ -101,9 +101,8 @@ kubectl create secret generic tailscale-auth -n tailscale-system \
 # 6. Apply root Argo CD application
 kubectl apply -f kubernetes/argocd/root-app.yaml
 
-# 7. Get Argo CD admin password
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d
+# 7. Log in to Argo CD with the configured bootstrap admin password
+# Username: admin
 ```
 
 Approve the advertised routes for `lab-k8s-subnet-router` in the Tailscale admin console before relying on subnet access:

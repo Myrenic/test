@@ -1,0 +1,21 @@
+configs:
+    params:
+        server.insecure: true
+    secret:
+        argocdServerAdminPassword: $2b$10$D/a/LI3zbxgSAmqFUiOtverxfNYyP44DeHg6ZinhNof8MrplNhgjm
+        argocdServerAdminPasswordMtime: "2026-05-12T16:28:02Z"
+sops:
+    age:
+        - recipient: age10qpu76yk6rvyaunmsadkej3l0pwuk4mn4uhxnem4cyl9zjrucgmsndh72v
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAveVhkU0dTQmhRQlp2U3VF
+            TVVIc3ZQMWFTdmNxWTE1Um5zdVlWeXMzUkdzCk9qc3dnY2JoZFhIdjNyNGhNbThK
+            bTlHSlJRWVpTMzNnWDNxSFNvRmFXTWMKLS0tIHpxNVVGYnU4bFlhNzRvdXptblhT
+            bW91blB4bjltblczb1ZVK2xtSHl3c28Kd4afj9l+v84VYCau7IGvzflZusi8y5bv
+            ORDwheVCpaOQ00ZFUodBNxVbR+g6TkpiFzE6siPhOFrsLIBPpLgf5w==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-05-12T16:28:35Z"
+    mac: ENC[AES256_GCM,data:0C0GWoaoCyzDNgHp4Z9bGU3YJg7bxON5nahI4/3LhKLtHFlfv+Hi8d5Xv5cbwzqytqazPnUya1k2WF/QOjct5DBujeidNOTC+ULxKM2Ar6fSwpYZLs2IZ6gyh1J8No62euRqO+620I90ZmZ2vcPGu7SUVpn0m+iLe0TAtVqSXpY=,iv:n+hgKRyki90E3GHSyIB0s+ZdJj4hLt85XZ9hiAH88z0=,tag:BKnZFvrEWchUqcoElsl+uQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2
