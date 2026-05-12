@@ -105,12 +105,12 @@ for i in $(seq 1 "$LOOPS"); do
 
     # Find unhealthy pods, excluding:
     #   Running/Completed/Succeeded/Terminating = expected states
+    #   kube-system = managed by Talos, not our concern
     #   DaemonSet pods = always present on each node
-    #   external-dns + etcd = infrastructure with known restart dependency
-    #   cert-manager = infrastructure, self-heals
-    #   local-path-storage = infrastructure provisioner
+    #   external-dns + cert-manager + local-path = infrastructure, self-heals
     UNHEALTHY_PODS=$(echo "$POD_LINES" | \
       grep -vE "Running|Completed|Succeeded|Terminating" | \
+      grep -vE "^kube-system" | \
       grep -vE "netbird|kube-proxy|kube-flannel" | \
       grep -vE "external-dns|cert-manager|local-path" | \
       grep -v "^$" || true)
