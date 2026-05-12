@@ -106,6 +106,12 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d
 ```
 
+Approve the advertised routes for `lab-k8s-subnet-router` in the Tailscale admin console before relying on subnet access:
+
+- `10.0.3.0/24` for the lab LAN and devbox
+- `10.96.0.0/12` for Kubernetes services
+- `10.244.0.0/16` for Kubernetes pods
+
 ## Destroy / Rebuild
 
 ```bash
