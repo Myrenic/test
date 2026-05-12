@@ -22,7 +22,7 @@ spec:
       targetRevision: HEAD
       path: kubernetes/apps/metallb
       directory:
-        include: pool.yaml
+        include: '{namespace.yaml,pool.yaml}'
   syncPolicy:
     automated:
       prune: true
