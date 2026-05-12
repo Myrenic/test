@@ -10,27 +10,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: external-dns
-  sources:
-    - repoURL: https://kubernetes-sigs.github.io/external-dns/
-      chart: external-dns
-      targetRevision: 1.21.1
-      helm:
-        valuesObject:
-          provider:
-            name: cloudflare
-          env:
-            - name: CF_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: cloudflare-api-token
-                  key: api-token
-          domainFilters:
-            - test.tuntelder.com
-          txtOwnerId: lab-cluster
-          policy: sync
-          sources:
-            - ingress
-            - service
+  source:
+    repoURL: https://github.com/myrenic/test.git
+    targetRevision: HEAD
+    path: kubernetes/apps/external-dns/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

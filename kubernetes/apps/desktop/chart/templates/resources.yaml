@@ -1,0 +1,253 @@
+{{- $cfg := index .Values "desktop" -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $cfg.namespace.name }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $cfg.configMapName }}
+  namespace: {{ $cfg.namespace.name }}
+data:
+  xfce4-desktop.xml: |
+    <?xml version="1.1" encoding="UTF-8"?>
+
+    <channel name="xfce4-desktop" version="1.0">
+      <property name="last-settings-migration-version" type="uint" value="1"/>
+      <property name="backdrop" type="empty">
+        <property name="screen0" type="empty">
+          <property name="monitorselkies-primary" type="empty">
+            <property name="workspace0" type="empty">
+              <property name="last-image" type="string" value="/usr/share/backgrounds/xfce/xfce-leaves.svg"/>
+            </property>
+          </property>
+          <property name="monitorselkies-display2" type="empty">
+            <property name="workspace0" type="empty">
+              <property name="last-image" type="string" value="/usr/share/backgrounds/xfce/xfce-leaves.svg"/>
+            </property>
+          </property>
+        </property>
+      </property>
+      <property name="desktop-icons" type="empty">
+        <property name="style" type="int" value="0"/>
+      </property>
+      <property name="last" type="empty">
+        <property name="window-width" type="int" value="720"/>
+        <property name="window-height" type="int" value="900"/>
+      </property>
+    </channel>
+  xfce4-panel.xml: |
+    <?xml version="1.1" encoding="UTF-8"?>
+
+    <channel name="xfce4-panel" version="1.0">
+      <property name="configver" type="int" value="2"/>
+      <property name="panels" type="array">
+        <value type="int" value="1"/>
+        <property name="dark-mode" type="bool" value="true"/>
+        <property name="panel-1" type="empty">
+          <property name="position" type="string" value="p=6;x=0;y=0"/>
+          <property name="length" type="uint" value="100"/>
+          <property name="position-locked" type="bool" value="true"/>
+          <property name="icon-size" type="uint" value="40"/>
+          <property name="size" type="uint" value="64"/>
+          <property name="plugin-ids" type="array">
+            <value type="int" value="1"/>
+            <value type="int" value="2"/>
+            <value type="int" value="3"/>
+            <value type="int" value="8"/>
+            <value type="int" value="10"/>
+          </property>
+        </property>
+      </property>
+      <property name="plugins" type="empty">
+        <property name="plugin-1" type="string" value="applicationsmenu"/>
+        <property name="plugin-2" type="string" value="tasklist">
+          <property name="grouping" type="uint" value="1"/>
+        </property>
+        <property name="plugin-3" type="string" value="separator">
+          <property name="expand" type="bool" value="true"/>
+          <property name="style" type="uint" value="0"/>
+        </property>
+        <property name="plugin-8" type="string" value="clock"/>
+        <property name="plugin-10" type="string" value="actions"/>
+      </property>
+    </channel>
+  xfwm4.xml: |
+    <?xml version="1.1" encoding="UTF-8"?>
+
+    <channel name="xfwm4" version="1.0">
+      <property name="general" type="empty">
+        <property name="activate_action" type="string" value="bring"/>
+        <property name="borderless_maximize" type="bool" value="true"/>
+        <property name="box_move" type="bool" value="false"/>
+        <property name="box_resize" type="bool" value="false"/>
+        <property name="button_layout" type="string" value="O|SHMC"/>
+        <property name="click_to_focus" type="bool" value="true"/>
+        <property name="double_click_action" type="string" value="maximize"/>
+        <property name="placement_mode" type="string" value="center"/>
+        <property name="scroll_workspaces" type="bool" value="false"/>
+        <property name="show_app_icon" type="bool" value="true"/>
+        <property name="snap_to_border" type="bool" value="true"/>
+        <property name="theme" type="string" value="Default"/>
+        <property name="tile_on_move" type="bool" value="true"/>
+        <property name="title_alignment" type="string" value="center"/>
+        <property name="title_font" type="string" value="Sans Bold 14"/>
+        <property name="use_compositing" type="bool" value="false"/>
+        <property name="workspace_count" type="int" value="1"/>
+        <property name="workspace_names" type="array">
+          <value type="string" value="Desktop"/>
+        </property>
+      </property>
+    </channel>
+  xsettings.xml: |
+    <?xml version="1.1" encoding="UTF-8"?>
+
+    <channel name="xsettings" version="1.0">
+      <property name="Net" type="empty">
+        <property name="ThemeName" type="string" value="adw-gtk3-dark"/>
+        <property name="IconThemeName" type="string" value="adwaita-xfce"/>
+      </property>
+      <property name="Xft" type="empty">
+        <property name="DPI" type="int" value="192"/>
+      </property>
+      <property name="Gtk" type="empty">
+        <property name="FontName" type="string" value="Sans 14"/>
+        <property name="MonospaceFontName" type="string" value="Monospace 13"/>
+        <property name="CursorThemeName" type="string" value="Adwaita"/>
+        <property name="CursorThemeSize" type="int" value="64"/>
+        <property name="DecorationLayout" type="string" value="icon,menu:minimize,maximize,close"/>
+      </property>
+      <property name="Gdk" type="empty">
+        <property name="WindowScalingFactor" type="int" value="2"/>
+      </property>
+    </channel>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $cfg.pvc.name }}
+  namespace: {{ $cfg.namespace.name }}
+spec:
+  storageClassName: {{ $cfg.pvc.storageClassName }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $cfg.pvc.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $cfg.service.name }}
+  namespace: {{ $cfg.namespace.name }}
+spec:
+  selector:
+    app: webtop
+  ports:
+    - name: http
+      port: {{ $cfg.service.port }}
+      targetPort: {{ $cfg.service.targetPort }}
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webtop
+  namespace: {{ $cfg.namespace.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webtop
+  template:
+    metadata:
+      annotations:
+        lab.myrenic.io/mobile-profile: {{ $cfg.mobileProfileVersion | quote }}
+      labels:
+        app: webtop
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      initContainers:
+        - name: apply-mobile-profile
+          image: {{ $cfg.image.repository }}:{{ $cfg.image.tag }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              target="/config/.config/xfce4/xfconf/xfce-perchannel-xml"
+              version_file="/config/.mobile-layout-version"
+              desired="{{ $cfg.mobileProfileVersion }}"
+              current=""
+              if [ -f "${version_file}" ]; then
+                current="$(cat "${version_file}")"
+              fi
+
+              if [ "${current}" != "${desired}" ]; then
+                mkdir -p "${target}"
+                cp /mobile-defaults/*.xml "${target}/"
+                printf '%s\n' "${desired}" > "${version_file}"
+                chown -R 1000:1000 /config/.config "${version_file}"
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: mobile-defaults
+              mountPath: /mobile-defaults
+      containers:
+        - name: webtop
+          image: {{ $cfg.image.repository }}:{{ $cfg.image.tag }}
+          ports:
+            - name: http
+              containerPort: {{ $cfg.service.targetPort }}
+          env:
+{{- range $name, $value := $cfg.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+{{- end }}
+          resources:
+{{ toYaml $cfg.resources | indent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ $cfg.pvc.name }}
+        - name: mobile-defaults
+          configMap:
+            name: {{ $cfg.configMapName }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $cfg.ingress.name }}
+  namespace: {{ $cfg.namespace.name }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ $cfg.ingress.clusterIssuer }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: {{ $cfg.ingress.middleware }}
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - {{ $cfg.ingress.host }}
+      secretName: {{ $cfg.ingress.tlsSecretName }}
+  rules:
+    - host: {{ $cfg.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $cfg.service.name }}
+                port:
+                  number: {{ $cfg.service.port }}

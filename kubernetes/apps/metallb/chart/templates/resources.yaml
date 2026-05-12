@@ -1,0 +1,26 @@
+{{- $cfg := index .Values "metallb-platform" -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $cfg.namespace.name }}
+  labels:
+{{ toYaml $cfg.namespace.labels | indent 4 }}
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: {{ $cfg.addressPool.name }}
+  namespace: {{ $cfg.namespace.name }}
+spec:
+  addresses:
+{{ toYaml $cfg.addressPool.addresses | indent 4 }}
+  autoAssign: {{ $cfg.addressPool.autoAssign }}
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: {{ $cfg.addressPool.name }}
+  namespace: {{ $cfg.namespace.name }}
+spec:
+  ipAddressPools:
+    - {{ $cfg.addressPool.name }}

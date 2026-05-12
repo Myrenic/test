@@ -1,0 +1,4 @@
+apiVersion: v2
+name: cluster-secrets
+version: 0.1.0
+type: application

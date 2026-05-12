@@ -10,39 +10,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik
-  sources:
-    - repoURL: https://traefik.github.io/charts
-      chart: traefik
-      targetRevision: 40.1.0
-      helm:
-        valuesObject:
-          ingressClass:
-            enabled: true
-            isDefaultClass: true
-          service:
-            annotations:
-              metallb.io/address-pool: lan-pool
-            spec:
-              type: LoadBalancer
-              loadBalancerIP: 10.0.3.70
-              externalTrafficPolicy: Local
-          ports:
-            web:
-              http:
-                redirections:
-                  entryPoint:
-                    to: websecure
-                    scheme: https
-                    permanent: true
-          providers:
-            kubernetesCRD:
-              enabled: true
-              allowCrossNamespace: true
-            kubernetesIngress:
-              enabled: true
-          logs:
-            general:
-              level: INFO
+  source:
+    repoURL: https://github.com/myrenic/test.git
+    targetRevision: HEAD
+    path: kubernetes/apps/traefik/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

@@ -10,35 +10,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
-  sources:
-    - repoURL: https://charts.longhorn.io
-      chart: longhorn
-      targetRevision: 1.11.2
-      helm:
-        valuesObject:
-          defaultSettings:
-            defaultReplicaCount: 2
-            defaultDataLocality: best-effort
-          persistence:
-            defaultClassReplicaCount: 2
-          preUpgradeChecker:
-            jobEnabled: false
-          longhornManager:
-            tolerations:
-              - key: node-role.kubernetes.io/control-plane
-                operator: Exists
-                effect: NoSchedule
-          longhornDriver:
-            tolerations:
-              - key: node-role.kubernetes.io/control-plane
-                operator: Exists
-                effect: NoSchedule
-          namespaceOverride: longhorn-system
-    - repoURL: https://github.com/myrenic/test.git
-      targetRevision: HEAD
-      path: kubernetes/apps/longhorn
-      directory:
-        include: 'namespace.yaml'
+  source:
+    repoURL: https://github.com/myrenic/test.git
+    targetRevision: HEAD
+    path: kubernetes/apps/longhorn/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

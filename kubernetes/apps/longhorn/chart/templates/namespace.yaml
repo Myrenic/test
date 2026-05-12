@@ -1,0 +1,9 @@
+{{- $cfg := index .Values "longhorn-platform" -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $cfg.namespace.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+{{ toYaml $cfg.namespace.labels | indent 4 }}

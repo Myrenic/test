@@ -1,0 +1,20 @@
+{{- $cfg := index .Values "cert-manager-platform" -}}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ $cfg.clusterIssuer.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  acme:
+    email: {{ $cfg.clusterIssuer.email | quote }}
+    server: {{ $cfg.clusterIssuer.server | quote }}
+    privateKeySecretRef:
+      name: {{ $cfg.clusterIssuer.privateKeySecretName }}
+    solvers:
+      - selector: {}
+        dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: {{ $cfg.clusterIssuer.cloudflareSecretName }}
+              key: {{ $cfg.clusterIssuer.cloudflareSecretKey }}

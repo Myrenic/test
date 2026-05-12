@@ -1,0 +1,65 @@
+{{- $cfg := index .Values "traefik-config" -}}
+apiVersion: traefik.io/v1alpha1
+kind: TLSStore
+metadata:
+  name: {{ $cfg.tlsStore.name }}
+  namespace: traefik
+spec:
+  defaultCertificate:
+    secretName: {{ $cfg.tlsStore.secretName }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $cfg.forwardAuth.middlewareName }}
+  namespace: traefik
+spec:
+  forwardAuth:
+    address: {{ $cfg.forwardAuth.address | quote }}
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+      - X-Auth-Request-Preferred-Username
+      - X-Auth-Request-Groups
+      - X-Auth-Request-Access-Token
+      - Authorization
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $cfg.errorHandling.middlewareName }}
+  namespace: traefik
+spec:
+  errors:
+    status:
+      - "401"
+    service:
+      name: {{ $cfg.errorHandling.serviceName }}
+      namespace: {{ $cfg.errorHandling.serviceNamespace }}
+      port: 80
+    query: {{ $cfg.errorHandling.query | quote }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $cfg.authChain.middlewareName }}
+  namespace: traefik
+spec:
+  chain:
+    middlewares:
+      - name: {{ $cfg.errorHandling.middlewareName }}
+      - name: {{ $cfg.forwardAuth.middlewareName }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $cfg.certificate.name }}
+  namespace: traefik
+spec:
+  secretName: {{ $cfg.certificate.secretName }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: {{ $cfg.certificate.issuerName }}
+  dnsNames:
+{{ toYaml $cfg.certificate.dnsNames | indent 4 }}

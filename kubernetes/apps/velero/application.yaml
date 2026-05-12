@@ -10,49 +10,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: velero
-  sources:
-    - repoURL: https://vmware-tanzu.github.io/helm-charts
-      chart: velero
-      targetRevision: 12.0.1
-      helm:
-        valuesObject:
-          deployNodeAgent: true
-          credentials:
-            useSecret: true
-            existingSecret: velero-credentials
-          configuration:
-            backupStorageLocation:
-              - name: default
-                provider: azure
-                bucket: velero
-                default: true
-                credential:
-                  name: velero-credentials
-                  key: cloud
-                config:
-                  resourceGroup: Velero_Backups
-                  storageAccount: velero76b1f66a064d
-            defaultBackupStorageLocation: default
-            defaultBackupTTL: "168h"
-            defaultVolumesToFsBackup: true
-            uploaderType: kopia
-            volumeSnapshotLocation:
-              - name: default
-                provider: azure
-          schedules:
-            daily:
-              schedule: "0 2 * * *"
-              template:
-                ttl: "168h"
-                includedNamespaces:
-                  - "*"
-          initContainers:
-            - name: velero-plugin-for-microsoft-azure
-              image: velero/velero-plugin-for-microsoft-azure:v1.14.0
-              imagePullPolicy: IfNotPresent
-              volumeMounts:
-                - mountPath: /target
-                  name: plugins
+  source:
+    repoURL: https://github.com/myrenic/test.git
+    targetRevision: HEAD
+    path: kubernetes/apps/velero/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

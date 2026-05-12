@@ -13,10 +13,9 @@ spec:
   source:
     repoURL: https://github.com/myrenic/test.git
     targetRevision: HEAD
-    path: kubernetes/apps/desktop
-    directory:
-      recurse: true
-      exclude: application.yaml
+    path: kubernetes/apps/desktop/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

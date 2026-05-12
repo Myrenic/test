@@ -1,0 +1,77 @@
+{{- $cfg := index .Values "cluster-secrets" -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-dns
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oauth2-proxy
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $cfg.cloudflare.secretName }}
+  namespace: cert-manager
+type: Opaque
+stringData:
+  {{ $cfg.cloudflare.apiTokenKey }}: {{ .Values.global.cloudflare.apiToken | quote }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $cfg.cloudflare.secretName }}
+  namespace: external-dns
+type: Opaque
+stringData:
+  {{ $cfg.cloudflare.apiTokenKey }}: {{ .Values.global.cloudflare.apiToken | quote }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $cfg.oauth2Proxy.secretName }}
+  namespace: oauth2-proxy
+type: Opaque
+stringData:
+  client-id: {{ $cfg.oauth2Proxy.clientId | quote }}
+  client-secret: {{ $cfg.oauth2Proxy.clientSecret | quote }}
+  cookie-secret: {{ $cfg.oauth2Proxy.cookieSecret | quote }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $cfg.velero.secretName }}
+  namespace: velero
+type: Opaque
+stringData:
+  {{ $cfg.velero.credentialKey }}: |
+{{ $cfg.velero.cloud | indent 4 }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $cfg.tailscale.secretName }}
+  namespace: tailscale-system
+type: Opaque
+stringData:
+  TS_AUTHKEY: {{ $cfg.tailscale.authKey | quote }}

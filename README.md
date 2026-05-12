@@ -1,6 +1,6 @@
 # Lab Cluster Platform
 
-Helm-based homelab Kubernetes platform on Proxmox, managed by ArgoCD.
+Helm-first homelab Kubernetes platform on Proxmox, managed by Argo CD.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ Helm-based homelab Kubernetes platform on Proxmox, managed by ArgoCD.
 |-------|-----------|
 | **Infrastructure** | Proxmox VE + OpenTofu (3 Talos Linux VMs) |
 | **CNI** | Cilium (kubeProxyReplacement, Hubble) |
-| **GitOps** | Argo CD (app-of-apps pattern) |
+| **GitOps** | Argo CD + in-cluster SOPS Helm plugin |
 | **Ingress** | Traefik v3 (HTTP→HTTPS redirect, ForwardAuth) |
 | **Storage** | Longhorn (2-replica default, iSCSI extensions on Talos) |
 | **Certificates** | cert-manager (Let's Encrypt DNS-01 via Cloudflare) |
@@ -33,25 +33,21 @@ infrastructure/
     talos/              # 3-node Talos cluster
   tofu.sh               # Unified OpenTofu wrapper
 kubernetes/
-  argocd/               # Root Argo CD application
-  apps/                 # Per-app Argo CD Applications + manifests
-    cilium/             # Cilium CNI
-    traefik/            # Traefik ingress controller
-    cert-manager/       # cert-manager + ClusterIssuer
-    external-dns/       # ExternalDNS for Cloudflare
-    longhorn/           # Longhorn distributed storage
-    oauth2-proxy/       # OAuth2 Proxy with Azure Entra ID
-    tailscale/          # Tailscale subnet router
-    velero/             # Velero backup
-    traefik-config/     # Traefik middlewares (ForwardAuth chain)
-    desktop/            # Mobile-tuned Webtop browser desktop
-  secrets/              # SOPS-encrypted secrets
+  argocd/
+    bootstrap-values.sops.yaml   # Argo CD bootstrap, admin password, repo-server plugin
+    root-app.yaml                # Root application
+  common/
+    cluster-values.sops.yaml     # Shared encrypted cluster/app values
+  apps/
+    <app>/
+      application.yaml           # Argo CD Application
+      chart/                     # Local Helm chart or wrapper chart
 ```
 
 ## Secrets
 
-All secrets encrypted with [SOPS](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age).
-Files matching `*.sops.yaml` are encrypted at rest. The age public key is in `.sops.yaml`.
+All shared cluster configuration and secrets live in SOPS-encrypted values files.
+The age public key policy is in `.sops.yaml`.
 
 **Never commit unencrypted secrets.**
 
@@ -80,29 +76,20 @@ helm install cilium cilium/cilium --version 1.17.3 --namespace kube-system \
   --set k8sServiceHost=localhost --set k8sServicePort=7445 \
   --set cgroup.autoMount.enabled=false --set cgroup.hostRoot=/sys/fs/cgroup
 
-# 4. Install Argo CD
+# 4. Install Argo CD with the SOPS-enabled repo-server
 helm repo add argo https://argoproj.github.io/argo-helm
 kubectl create namespace argocd
 helm install argocd argo/argo-cd --namespace argocd \
   -f <(sops -d kubernetes/argocd/bootstrap-values.sops.yaml)
 
-# 5. Create secrets (before applying root app)
-kubectl create secret generic cloudflare-api-token -n cert-manager \
-  --from-literal=api-token="<CF_TOKEN>"
-kubectl create secret generic cloudflare-api-token -n external-dns \
-  --from-literal=api-token="<CF_TOKEN>"
-kubectl create secret generic oauth2-proxy-secrets -n oauth2-proxy \
-  --from-literal=client-id="<AZURE_CLIENT_ID>" \
-  --from-literal=client-secret="<AZURE_CLIENT_SECRET>" \
-  --from-literal=cookie-secret="<COOKIE_SECRET>"
-kubectl create secret generic tailscale-auth -n tailscale-system \
-  --from-literal=TS_AUTHKEY="<TAILSCALE_AUTH_KEY>"
+# 5. Bootstrap the age private key for in-cluster decryption
+kubectl create secret generic argocd-sops-age-key -n argocd \
+  --from-file=keys.txt="$HOME/.config/sops/age/keys.txt"
 
 # 6. Apply root Argo CD application
 kubectl apply -f kubernetes/argocd/root-app.yaml
 
-# 7. Log in to Argo CD with the configured bootstrap admin password
-# Username: admin
+# 7. Log in to Argo CD with the configured bootstrap admin credentials
 ```
 
 Approve the advertised routes for `lab-k8s-subnet-router` in the Tailscale admin console before relying on subnet access:
@@ -116,7 +103,8 @@ Approve the advertised routes for `lab-k8s-subnet-router` in the Tailscale admin
 - OpenTofu owns the Proxmox infrastructure and Talos machine configuration.
 - Cilium and Argo CD are the direct-bootstrap components.
 - Argo CD owns the steady-state platform applications after the root app is applied.
-- SOPS-encrypted values live under `kubernetes/secrets/*.sops.yaml`; bootstrap secrets are applied from those encrypted sources before Argo CD takes over.
+- The repo-server decrypts `kubernetes/common/cluster-values.sops.yaml` in-cluster using the bootstrap age key secret.
+- The `cluster-secrets` app renders runtime Kubernetes Secrets for Cloudflare, OAuth2 Proxy, Velero, and Tailscale from that shared encrypted values file.
 
 ## Destroy / Rebuild
 
@@ -144,11 +132,7 @@ velero restore create --from-backup <backup-name>
 kubectl get nodes
 kubectl get applications -n argocd
 
-# Access Argo CD UI (port-forward)
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-
-# Or open the routed UI
-# https://argocd.test.tuntelder.com
+# Access Argo CD UI on the configured cluster domain
 
 # Check Longhorn UI
 kubectl port-forward svc/longhorn-frontend -n longhorn-system 8081:80

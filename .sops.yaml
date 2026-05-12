@@ -1,4 +1,8 @@
 creation_rules:
+  - path_regex: 'kubernetes/common/cluster-values\.sops\.ya?ml$'
+    encrypted_regex: '^(global|cluster-secrets|cilium|cert-manager|cert-manager-platform|external-dns|metallb|metallb-platform|traefik|traefik-config|oauth2-proxy|longhorn|longhorn-platform|velero|desktop|tailscale|argocd-ui)$'
+    age: >-
+      age10qpu76yk6rvyaunmsadkej3l0pwuk4mn4uhxnem4cyl9zjrucgmsndh72v
   - encrypted_regex: '^(data|stringData)$'
     path_regex: '.*\.sops\.ya?ml$'
     age: >-

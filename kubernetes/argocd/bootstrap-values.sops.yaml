@@ -1,21 +1,130 @@
 configs:
     params:
         server.insecure: true
+    cmp:
+        create: true
+        plugins:
+            helm-sops:
+                discover:
+                    fileName: ./Chart.yaml
+                init:
+                    command:
+                        - sh
+                        - -ec
+                    args:
+                        - |
+                          helm dependency build >/dev/null 2>&1 || helm dependency build
+                generate:
+                    command:
+                        - sh
+                        - -ec
+                    args:
+                        - |
+                          repo_root="$(git rev-parse --show-toplevel)"
+                          temp_dir="$(mktemp -d)"
+                          trap 'rm -rf "$temp_dir"' EXIT
+                          value_args=""
+
+                          for values_file in \
+                            values.yaml \
+                            values.sops.yaml \
+                            "${repo_root}/kubernetes/common/cluster-values.yaml" \
+                            "${repo_root}/kubernetes/common/cluster-values.sops.yaml"
+                          do
+                            if [ ! -f "${values_file}" ]; then
+                              continue
+                            fi
+
+                            case "${values_file}" in
+                              *.sops.yaml)
+                                output_file="${temp_dir}/$(basename "${values_file}" .sops.yaml).yaml"
+                                sops -d "${values_file}" > "${output_file}"
+                                value_args="${value_args} -f ${output_file}"
+                                ;;
+                              *)
+                                value_args="${value_args} -f ${values_file}"
+                                ;;
+                            esac
+                          done
+
+                          helm template "${ARGOCD_APP_NAME}" . \
+                            --namespace "${ARGOCD_APP_NAMESPACE}" \
+                            --include-crds \
+                            ${value_args}
     secret:
         argocdServerAdminPassword: $2b$10$D/a/LI3zbxgSAmqFUiOtverxfNYyP44DeHg6ZinhNof8MrplNhgjm
         argocdServerAdminPasswordMtime: "2026-05-12T16:28:02Z"
+repoServer:
+    initContainers:
+        - name: install-sops-tools
+          image: alpine:3.22
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -ec
+          args:
+            - |
+              apk add --no-cache curl tar
+              curl -fsSL -o /gitops-tools/sops "https://github.com/getsops/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64"
+              curl -fsSL -o /tmp/age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-amd64.tar.gz"
+              tar -xzf /tmp/age.tar.gz -C /tmp
+              install -m 0755 /tmp/age/age /gitops-tools/age
+              chmod 0755 /gitops-tools/sops
+          volumeMounts:
+            - name: gitops-tools
+              mountPath: /gitops-tools
+    extraContainers:
+        - name: cmp-helm-sops
+          image: quay.io/argoproj/argocd:v3.0.5
+          imagePullPolicy: IfNotPresent
+          command:
+            - /var/run/argocd/argocd-cmp-server
+          env:
+            - name: PATH
+              value: /gitops-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            - name: SOPS_AGE_KEY_FILE
+              value: /helm-secrets-age/keys.txt
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          volumeMounts:
+            - name: var-files
+              mountPath: /var/run/argocd
+            - name: plugins
+              mountPath: /home/argocd/cmp-server/plugins
+            - name: argocd-cmp-cm
+              mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              subPath: helm-sops.yaml
+            - name: cmp-tmp
+              mountPath: /tmp
+            - name: gitops-tools
+              mountPath: /gitops-tools
+            - name: sops-age-key
+              mountPath: /helm-secrets-age
+              readOnly: true
+    volumes:
+        - name: argocd-cmp-cm
+          configMap:
+            name: argocd-cmp-cm
+        - name: gitops-tools
+          emptyDir: {}
+        - name: cmp-tmp
+          emptyDir: {}
+        - name: sops-age-key
+          secret:
+            secretName: argocd-sops-age-key
 sops:
     age:
         - recipient: age10qpu76yk6rvyaunmsadkej3l0pwuk4mn4uhxnem4cyl9zjrucgmsndh72v
           enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAveVhkU0dTQmhRQlp2U3VF
-            TVVIc3ZQMWFTdmNxWTE1Um5zdVlWeXMzUkdzCk9qc3dnY2JoZFhIdjNyNGhNbThK
-            bTlHSlJRWVpTMzNnWDNxSFNvRmFXTWMKLS0tIHpxNVVGYnU4bFlhNzRvdXptblhT
-            bW91blB4bjltblczb1ZVK2xtSHl3c28Kd4afj9l+v84VYCau7IGvzflZusi8y5bv
-            ORDwheVCpaOQ00ZFUodBNxVbR+g6TkpiFzE6siPhOFrsLIBPpLgf5w==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAwUG02dDVuYWJaVExWVkdH
+            ZXlPTzdvMFVqWndJTFJYdTFMN1dPakkwVERVCnpuUExMeUpvUHF0YlAwQ0VKeEE5
+            TWFUbmFlclZTTjlxODNXaldDVEtrcFEKLS0tIGx4NEhWcUMwbEhIc0RERFdZWm0r
+            bjFGUmh2Q1pKSk1iWlgwa2NhYWNxLzAKhd96Ha4Zac2657jSGPe6IpX3avJPYAie
+            7iBboaJ34jxOkZwP28yzbXJBv9RsxfnuUlTaX8wK+wvpE1R6vUF+SA==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-05-12T16:28:35Z"
-    mac: ENC[AES256_GCM,data:0C0GWoaoCyzDNgHp4Z9bGU3YJg7bxON5nahI4/3LhKLtHFlfv+Hi8d5Xv5cbwzqytqazPnUya1k2WF/QOjct5DBujeidNOTC+ULxKM2Ar6fSwpYZLs2IZ6gyh1J8No62euRqO+620I90ZmZ2vcPGu7SUVpn0m+iLe0TAtVqSXpY=,iv:n+hgKRyki90E3GHSyIB0s+ZdJj4hLt85XZ9hiAH88z0=,tag:BKnZFvrEWchUqcoElsl+uQ==,type:str]
+    lastmodified: "2026-05-12T16:55:38Z"
+    mac: ENC[AES256_GCM,data:MCr+xUkt8aRHOWGrpuOfz1V5iGk0REFBgy2XgcbAs/LZXEU4dKEpBp8aZMNJHHR+eDruFcJ7VaFNKqPKaHZYU9Tx9MzQJtQW8uzw9LsK9RkUxohhlYXl0+QwDo2v6sv/K7MAxDPdFNQKuMHqqF63OYN9oHMkye5WMoRwzeV3MWw=,iv:fi3jV4wHnYtIriTq+l+QSTifn0IqhCOEsgMPcB6WNOc=,tag:CzrfJ4mxc0C5t5pJZfAgvw==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.10.2

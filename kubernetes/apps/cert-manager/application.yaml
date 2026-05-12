@@ -10,19 +10,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
-  sources:
-    - repoURL: https://charts.jetstack.io
-      chart: cert-manager
-      targetRevision: v1.17.2
-      helm:
-        valuesObject:
-          crds:
-            enabled: true
-    - repoURL: https://github.com/myrenic/test.git
-      targetRevision: HEAD
-      path: kubernetes/apps/cert-manager
-      directory:
-        include: cluster-issuer.yaml
+  source:
+    repoURL: https://github.com/myrenic/test.git
+    targetRevision: HEAD
+    path: kubernetes/apps/cert-manager/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

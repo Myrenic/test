@@ -13,10 +13,9 @@ spec:
   source:
     repoURL: https://github.com/myrenic/test.git
     targetRevision: HEAD
-    path: kubernetes/apps/tailscale
-    directory:
-      recurse: true
-      exclude: application.yaml
+    path: kubernetes/apps/tailscale/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

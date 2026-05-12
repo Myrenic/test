@@ -10,19 +10,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: metallb-system
-  sources:
-    - repoURL: https://metallb.github.io/metallb
-      chart: metallb
-      targetRevision: 0.15.3
-      helm:
-        valuesObject:
-          speaker:
-            ignoreExcludeLB: true
-    - repoURL: https://github.com/myrenic/test.git
-      targetRevision: HEAD
-      path: kubernetes/apps/metallb
-      directory:
-        include: '{namespace.yaml,pool.yaml}'
+  source:
+    repoURL: https://github.com/myrenic/test.git
+    targetRevision: HEAD
+    path: kubernetes/apps/metallb/chart
+    plugin:
+      name: helm-sops
   syncPolicy:
     automated:
       prune: true

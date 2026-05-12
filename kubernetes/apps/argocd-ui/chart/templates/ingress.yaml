@@ -1,0 +1,26 @@
+{{- $cfg := index .Values "argocd-ui" -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $cfg.ingress.name }}
+  namespace: argocd
+  annotations:
+    cert-manager.io/cluster-issuer: {{ $cfg.ingress.clusterIssuer }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - {{ $cfg.ingress.host }}
+      secretName: {{ $cfg.ingress.tlsSecretName }}
+  rules:
+    - host: {{ $cfg.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
