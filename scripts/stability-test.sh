@@ -82,7 +82,15 @@ for i in $(seq 1 "$LOOPS"); do
       continue
     fi
 
-    UNHEALTHY_PODS=$(echo "$POD_OUTPUT" | \
+    # Filter to actual pod lines only (namespace name ready status ...)
+    # This excludes kubectl proxy error messages that appear on stdout
+    POD_LINES=$(echo "$POD_OUTPUT" | grep -E '^\S+\s+\S+\s+[0-9]+/[0-9]+\s+' || true)
+    if [ -z "$POD_LINES" ]; then
+      sleep 5
+      continue
+    fi
+
+    UNHEALTHY_PODS=$(echo "$POD_LINES" | \
       grep -vE "Running|Completed|Succeeded" | \
       grep -vE "netbird|kube-proxy|kube-flannel" | \
       grep -vE "external-dns" | \
@@ -170,8 +178,8 @@ for i in $(seq 1 "$LOOPS"); do
 
   # Wait for cluster to fully recover before next loop
   if [ "$i" -lt "$LOOPS" ]; then
-    log "Waiting 30s for cluster recovery..."
-    sleep 30
+    log "Waiting 45s for cluster recovery..."
+    sleep 45
   fi
   echo ""
 done
