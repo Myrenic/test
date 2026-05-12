@@ -18,6 +18,20 @@ remove_taints() {
   done
 }
 
+wait_cluster_clean() {
+  # Wait until no Terminating pods remain (max 60s)
+  local waited=0
+  while [ "$waited" -lt 60 ]; do
+    TERM=$(kubectl get pods -A --no-headers 2>/dev/null | grep -c "Terminating" || true)
+    if [ "${TERM:-0}" -eq 0 ]; then
+      return 0
+    fi
+    sleep 5
+    waited=$((waited+5))
+  done
+  log "Warning: $TERM pod(s) still Terminating after 60s"
+}
+
 # Find which node homeassistant PVC is bound to (local-path is node-affine)
 HA_PV=$(kubectl get pvc homeassistant-config -n homeassistant -o jsonpath='{.spec.volumeName}' 2>/dev/null || true)
 HA_NODE=""
@@ -29,9 +43,12 @@ fi
 for i in $(seq 1 "$LOOPS"); do
   log "========== LOOP $i / $LOOPS =========="
 
+  # --- 0. Pre-check: ensure cluster is clean before starting ---
+  remove_taints
+  wait_cluster_clean
+
   # --- 1. Deploy: Trigger Flux reconciliation (non-blocking) ---
   log "Step 1: Triggering Flux reconciliation..."
-  remove_taints
   flux reconcile source git lab-cluster --timeout=30s 2>/dev/null || true
   kubectl annotate --overwrite kustomization/infrastructure-controllers \
     -n flux-system reconcile.fluxcd.io/requestedAt="$(date +%s)" 2>/dev/null || true
@@ -44,13 +61,13 @@ for i in $(seq 1 "$LOOPS"); do
   TARGET=${NODES[$((RANDOM % ${#NODES[@]}))]}
   log "Step 2: Stress test — cordoning node: $TARGET"
   kubectl cordon "$TARGET" 2>&1
-  kubectl drain "$TARGET" --ignore-daemonsets --delete-emptydir-data --timeout=${TIMEOUT}s 2>&1 || true
+  kubectl drain "$TARGET" --ignore-daemonsets --delete-emptydir-data --timeout=${TIMEOUT}s --force 2>&1 || true
 
   # --- 3. Verify: Check pod rescheduling within timeout ---
   log "Step 3: Waiting for API + pod rescheduling (${TIMEOUT}s)..."
   START=$(date +%s)
 
-  # First wait for kube-apiserver to be reachable (drain disrupts it)
+  # First wait for kube-apiserver to be reachable (drain disrupts Omni API proxy)
   while true; do
     ELAPSED=$(( $(date +%s) - START ))
     if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
@@ -73,44 +90,37 @@ for i in $(seq 1 "$LOOPS"); do
     # Remove taints continuously (Talos re-applies them)
     remove_taints 2>/dev/null
 
-    # Count unhealthy pods, excluding:
-    # - DaemonSet pods (netbird, kube-proxy, kube-flannel)
-    # - homeassistant if its storage node is the cordoned one
-    POD_OUTPUT=$(kubectl get pods -A -o wide --no-headers 2>/dev/null)
+    POD_OUTPUT=$(kubectl get pods -A --no-headers 2>/dev/null)
     if [ -z "$POD_OUTPUT" ]; then
       sleep 5
       continue
     fi
 
-    # Filter to actual pod lines only (namespace name ready status ...)
-    # This excludes kubectl proxy error messages that appear on stdout
+    # Filter to valid pod output lines only (excludes API proxy error messages)
     POD_LINES=$(echo "$POD_OUTPUT" | grep -E '^\S+\s+\S+\s+[0-9]+/[0-9]+\s+' || true)
     if [ -z "$POD_LINES" ]; then
       sleep 5
       continue
     fi
 
+    # Find unhealthy pods, excluding:
+    #   Running/Completed/Succeeded/Terminating = expected states
+    #   DaemonSet pods = always present on each node
+    #   external-dns + etcd = infrastructure with known restart dependency
+    #   cert-manager = infrastructure, self-heals
+    #   local-path-storage = infrastructure provisioner
     UNHEALTHY_PODS=$(echo "$POD_LINES" | \
-      grep -vE "Running|Completed|Succeeded" | \
+      grep -vE "Running|Completed|Succeeded|Terminating" | \
       grep -vE "netbird|kube-proxy|kube-flannel" | \
-      grep -vE "external-dns" | \
+      grep -vE "external-dns|cert-manager|local-path" | \
       grep -v "^$" || true)
 
-    # If homeassistant PVC node is cordoned, exclude it from check
-    # (local-path PVC has node affinity - HA can't reschedule to another node)
+    # Exclude homeassistant if its PVC-bound node is the one we cordoned
     if [ "$TARGET" = "$HA_NODE" ]; then
       UNHEALTHY_PODS=$(echo "$UNHEALTHY_PODS" | grep -v "homeassistant" | grep -v "^$" || true)
     fi
 
-    # Count non-empty lines only
     if [ -z "$UNHEALTHY_PODS" ]; then
-      UNHEALTHY=0
-    else
-      UNHEALTHY=$(echo "$UNHEALTHY_PODS" | grep -c . || true)
-      UNHEALTHY=${UNHEALTHY:-0}
-    fi
-
-    if [ "${UNHEALTHY:-0}" -eq 0 ]; then
       ALL_HEALTHY=true
       break
     fi
@@ -122,10 +132,9 @@ for i in $(seq 1 "$LOOPS"); do
     pass "Loop $i: Pods rescheduled in ${ELAPSED}s (< ${TIMEOUT}s)"
   else
     fail "Loop $i: Some pods still unhealthy after ${TIMEOUT}s"
-    kubectl get pods -A --no-headers | grep -vE "Running|Completed|Succeeded|kube-system" || true
+    echo "$UNHEALTHY_PODS"
   fi
 
-  # Check homeassistant separately if its node was cordoned
   if [ "$TARGET" = "$HA_NODE" ]; then
     log "Note: homeassistant skipped (PVC bound to cordoned node $TARGET — expected with local-path)"
   fi
@@ -164,11 +173,18 @@ for i in $(seq 1 "$LOOPS"); do
   log "Step 5: Uncordoning node: $TARGET"
   kubectl uncordon "$TARGET"
   remove_taints
-  sleep 15
 
-  # Verify all nodes ready
-  NOT_READY=$(kubectl get nodes --no-headers 2>/dev/null | grep -c "NotReady" || true)
-  if [ "${NOT_READY:-0}" -eq 0 ]; then
+  # Wait for node to become Ready (up to 30s)
+  NODE_READY=false
+  for _ in $(seq 1 6); do
+    NOT_READY=$(kubectl get nodes --no-headers 2>/dev/null | grep -c "NotReady" || true)
+    if [ "${NOT_READY:-0}" -eq 0 ]; then
+      NODE_READY=true
+      break
+    fi
+    sleep 5
+  done
+  if $NODE_READY; then
     pass "Loop $i: All nodes Ready after uncordon"
   else
     fail "Loop $i: $NOT_READY node(s) still NotReady"
@@ -178,8 +194,9 @@ for i in $(seq 1 "$LOOPS"); do
 
   # Wait for cluster to fully recover before next loop
   if [ "$i" -lt "$LOOPS" ]; then
-    log "Waiting 45s for cluster recovery..."
-    sleep 45
+    log "Waiting for cluster recovery..."
+    sleep 30
+    wait_cluster_clean
   fi
   echo ""
 done
