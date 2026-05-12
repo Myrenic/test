@@ -25,7 +25,7 @@ spec:
                   name: cloudflare-api-token
                   key: api-token
           domainFilters:
-            - tuntelder.com
+            - test.tuntelder.com
           txtOwnerId: lab-cluster
           policy: sync
           sources:

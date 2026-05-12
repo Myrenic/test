@@ -11,10 +11,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - desktop.tuntelder.com
+        - desktop.test.tuntelder.com
       secretName: desktop-tls
   rules:
-    - host: desktop.tuntelder.com
+    - host: desktop.test.tuntelder.com
       http:
         paths:
           - path: /

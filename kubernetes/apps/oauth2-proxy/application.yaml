@@ -24,9 +24,9 @@ spec:
               provider = "oidc"
               oidc_issuer_url = "https://login.microsoftonline.com/d18a2568-9941-4c45-9cb0-cb9cda2e9c31/v2.0"
               email_domains = [ "*" ]
-              redirect_url = "https://auth.tuntelder.com/oauth2/callback"
-              cookie_domains = [ ".tuntelder.com" ]
-              whitelist_domains = [ ".tuntelder.com" ]
+              redirect_url = "https://auth.test.tuntelder.com/oauth2/callback"
+              cookie_domains = [ ".test.tuntelder.com" ]
+              whitelist_domains = [ ".test.tuntelder.com" ]
               reverse_proxy = true
               set_xauthrequest = true
               cookie_secure = true
@@ -37,11 +37,11 @@ spec:
             enabled: true
             className: traefik
             hosts:
-              - auth.tuntelder.com
+              - auth.test.tuntelder.com
             tls:
               - secretName: auth-tls
                 hosts:
-                  - auth.tuntelder.com
+                  - auth.test.tuntelder.com
             annotations:
               cert-manager.io/cluster-issuer: letsencrypt-prod
   syncPolicy:
