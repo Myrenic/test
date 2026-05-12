@@ -7,13 +7,6 @@ configs:
             helm-sops:
                 discover:
                     fileName: ./Chart.yaml
-                init:
-                    command:
-                        - sh
-                        - -ec
-                    args:
-                        - |
-                          helm dependency build >/dev/null 2>&1 || helm dependency build
                 generate:
                     command:
                         - sh
@@ -118,13 +111,13 @@ sops:
         - recipient: age10qpu76yk6rvyaunmsadkej3l0pwuk4mn4uhxnem4cyl9zjrucgmsndh72v
           enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAwUG02dDVuYWJaVExWVkdH
-            ZXlPTzdvMFVqWndJTFJYdTFMN1dPakkwVERVCnpuUExMeUpvUHF0YlAwQ0VKeEE5
-            TWFUbmFlclZTTjlxODNXaldDVEtrcFEKLS0tIGx4NEhWcUMwbEhIc0RERFdZWm0r
-            bjFGUmh2Q1pKSk1iWlgwa2NhYWNxLzAKhd96Ha4Zac2657jSGPe6IpX3avJPYAie
-            7iBboaJ34jxOkZwP28yzbXJBv9RsxfnuUlTaX8wK+wvpE1R6vUF+SA==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBuZzBmcFRNb1J0U1lMYzNi
+            YlMwVFFSVDdIOFl0M1U0OGVjNWJ0T1NLWG5vCmNYRENBSlcrOVIyYkJhYmlHMjlv
+            cVg3WjlBZXAzL3FFbEJ2amo2U0JTdjAKLS0tIHk3VExHZ0YwSi84eGNUS05EUjh1
+            cjRHOHFvVmtMOWtPelBRM0JEalNpbjgKdUo669qM8NSGs6pvVwdC/VEja7DmD98l
+            TejUcCN+NidqzMIY8CeCoSLdPjxWEtV9ryK28dV+7q7F8czKnBiFjg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-05-12T16:55:38Z"
-    mac: ENC[AES256_GCM,data:MCr+xUkt8aRHOWGrpuOfz1V5iGk0REFBgy2XgcbAs/LZXEU4dKEpBp8aZMNJHHR+eDruFcJ7VaFNKqPKaHZYU9Tx9MzQJtQW8uzw9LsK9RkUxohhlYXl0+QwDo2v6sv/K7MAxDPdFNQKuMHqqF63OYN9oHMkye5WMoRwzeV3MWw=,iv:fi3jV4wHnYtIriTq+l+QSTifn0IqhCOEsgMPcB6WNOc=,tag:CzrfJ4mxc0C5t5pJZfAgvw==,type:str]
+    lastmodified: "2026-05-12T17:00:09Z"
+    mac: ENC[AES256_GCM,data:bxFhIYNK8hYBYKioluFtfpBPiGL54Q41DLA3F3c1tdEhjNb/bM9sM7iTVk44c3cRtVufHZ/e2Ujsy2sLlf91Xk3bmtR3m0NiQojs31/u2g4CHKm/l3RRGyTV20IP1pl6Wlm+LXRW4zlK9LTX20KA0HPOVRHdlG/sHnQ4WjwgfhI=,iv:yBP/w+5oYCCZNUOTpzXPJvbKBj5CVByDS61GSS2CJPQ=,tag:Fw7BG6lts0BBGoXA7u5e5Q==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.10.2
