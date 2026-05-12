@@ -14,7 +14,7 @@ Helm-based homelab Kubernetes platform on Proxmox, managed by ArgoCD.
 | **Certificates** | cert-manager (Let's Encrypt DNS-01 via Cloudflare) |
 | **DNS** | ExternalDNS (Cloudflare provider) |
 | **Auth** | OAuth2 Proxy (Azure Entra ID OIDC, Traefik ForwardAuth) |
-| **VPN** | Tailscale operator |
+| **VPN** | Tailscale subnet router |
 | **Backup** | Velero (S3-compatible backend) |
 | **Workloads** | Webtop browser desktop (Longhorn PVC, OAuth2 protected) |
 
@@ -41,7 +41,7 @@ kubernetes/
     external-dns/       # ExternalDNS for Cloudflare
     longhorn/           # Longhorn distributed storage
     oauth2-proxy/       # OAuth2 Proxy with Azure Entra ID
-    tailscale/          # Tailscale operator
+    tailscale/          # Tailscale subnet router
     velero/             # Velero backup
     traefik-config/     # Traefik middlewares (ForwardAuth chain)
     desktop/            # Webtop browser desktop
@@ -95,6 +95,8 @@ kubectl create secret generic oauth2-proxy-secrets -n oauth2-proxy \
   --from-literal=client-id="<AZURE_CLIENT_ID>" \
   --from-literal=client-secret="<AZURE_CLIENT_SECRET>" \
   --from-literal=cookie-secret="<COOKIE_SECRET>"
+kubectl create secret generic tailscale-auth -n tailscale-system \
+  --from-literal=TS_AUTHKEY="<TAILSCALE_AUTH_KEY>"
 
 # 6. Apply root Argo CD application
 kubectl apply -f kubernetes/argocd/root-app.yaml
