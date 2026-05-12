@@ -13,7 +13,7 @@ pass() { PASS=$((PASS+1)); log "✅ PASS: $*"; }
 fail() { FAIL=$((FAIL+1)); log "❌ FAIL: $*"; }
 
 remove_taints() {
-  for node in $(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}'); do
+  for node in $(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}' 2>/dev/null); do
     kubectl taint nodes "$node" node-role.kubernetes.io/control-plane:NoSchedule- 2>/dev/null || true
   done
 }
@@ -57,7 +57,17 @@ for i in $(seq 1 "$LOOPS"); do
   sleep 5
 
   # --- 2. Stress Test: Cordon & drain a random node ---
-  readarray -t NODES < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+  # Retry getting node list (API may be temporarily unavailable after drain)
+  NODES=()
+  for _ in $(seq 1 10); do
+    readarray -t NODES < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null)
+    if [ "${#NODES[@]}" -gt 0 ]; then break; fi
+    sleep 3
+  done
+  if [ "${#NODES[@]}" -eq 0 ]; then
+    fail "Loop $i: Could not get node list from API"
+    continue
+  fi
   TARGET=${NODES[$((RANDOM % ${#NODES[@]}))]}
   log "Step 2: Stress test — cordoning node: $TARGET"
   kubectl cordon "$TARGET" 2>&1
